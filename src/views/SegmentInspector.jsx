@@ -6,6 +6,7 @@ const TYPE_LABELS = {
   exponential: 'Exponential',
   sine: 'Sine Wave',
   stutter: 'Stutter',
+  spike: 'Spike',
   polynomial: 'Polynomial',
 }
 
@@ -14,6 +15,7 @@ const TYPE_COLORS = {
   exponential: '#cc88ff',
   sine: '#88ff66',
   stutter: '#ffcc44',
+  spike: '#ff6688',
   polynomial: '#ff8844',
 }
 
@@ -108,6 +110,15 @@ export default function SegmentInspector() {
           <>
             <ParamRow label="High SV" value={seg.params.highSV} />
             <ParamRow label="Low SV" value={seg.params.lowSV} />
+            <ParamRow label="Interval" value={`${Math.round(seg.params.interval)} ms`} />
+          </>
+        )}
+        {seg.type === 'spike' && (
+          <>
+            <ParamRow label="Base SV" value={seg.params.baseSV} />
+            <ParamRow label="Envelope" value={seg.params.envelope} />
+            <ParamRow label="Env Start" value={seg.params.envelopeStart} />
+            <ParamRow label="Env End" value={seg.params.envelopeEnd} />
             <ParamRow label="Interval" value={`${Math.round(seg.params.interval)} ms`} />
           </>
         )}

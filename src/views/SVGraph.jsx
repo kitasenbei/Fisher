@@ -296,9 +296,10 @@ export default function SVGraph() {
       }
     } // end beatGrid check
 
-    // SV step line + fill
+    // SV step line + fill — skip points inside Fisher segments
     if (sv.length > 0 && (d.svLine || d.svFill)) {
       const visEnd = vp.endMs
+      const skipSeg = d.fisherCurves && segmentedIndices.size > 0
 
       ctx.beginPath()
       ctx.strokeStyle = COLORS.svLine
@@ -308,6 +309,13 @@ export default function SVGraph() {
       let lastY = 0
 
       for (let i = 0; i < sv.length; i++) {
+        const globalIdx = tpIndexMap.get(sv[i]) ?? -1
+        if (skipSeg && segmentedIndices.has(globalIdx)) {
+          // Break the line — next non-skipped point will moveTo
+          started = false
+          continue
+        }
+
         const px = toX(sv[i].offset)
         const py = toY(sv[i].svMultiplier)
 
@@ -341,6 +349,20 @@ export default function SVGraph() {
         let fStarted = false
         let fLastY = 0
         for (let i = 0; i < sv.length; i++) {
+          const globalIdx = tpIndexMap.get(sv[i]) ?? -1
+          if (skipSeg && segmentedIndices.has(globalIdx)) {
+            if (fStarted) {
+              ctx.lineTo(toX(sv[i].offset), fLastY)
+              ctx.lineTo(toX(sv[i].offset), h)
+              ctx.closePath()
+              ctx.fillStyle = COLORS.svFill
+              ctx.fill()
+              ctx.beginPath()
+              fStarted = false
+            }
+            continue
+          }
+
           const px = toX(sv[i].offset)
           const py = toY(sv[i].svMultiplier)
           if (px > w + 10 && fStarted) {
@@ -403,18 +425,27 @@ export default function SVGraph() {
           ctx.fillRect(sx, Math.min(minY, maxY) - 10, ex - sx, Math.abs(maxY - minY) + 20)
         }
 
-        // Draw curve
+        // Draw curve — color-coded by type
+        const segColors = {
+          linear: '#4da3f2',
+          exponential: '#cc88ff',
+          sine: '#88ff66',
+          stutter: '#ffcc44',
+          polynomial: '#ff8844',
+          spike: '#ff6688',
+        }
+        const segColor = segColors[seg.type] || '#4da3f2'
         ctx.beginPath()
-        ctx.strokeStyle = isSelected ? '#66bbff' : '#4da3f2'
+        ctx.strokeStyle = isSelected ? '#ffffff' : segColor
         ctx.lineWidth = isSelected ? 2.5 : 2
 
-        if (seg.type === 'stutter') {
-          // Alternating horizontal bars
+        if (seg.type === 'stutter' || seg.type === 'spike') {
+          // Alternating bars — stutter uses constant rails, spike uses envelope
           const steps = seg.pointCount
           for (let i = 0; i < steps; i++) {
             const t = steps > 1 ? i / (steps - 1) : 0
+            const sv = evaluateSegment(seg, t)
             const ms = seg.startMs + t * (seg.endMs - seg.startMs)
-            const sv = i % 2 === 0 ? seg.params.highSV : seg.params.lowSV
             const px = toX(ms)
             const py = toY(sv)
             if (i === 0) ctx.moveTo(px, py)
@@ -451,7 +482,7 @@ export default function SVGraph() {
         ]) {
           ctx.beginPath()
           ctx.arc(epx, epy, 3, 0, Math.PI * 2)
-          ctx.fillStyle = isSelected ? '#66bbff' : '#4da3f2'
+          ctx.fillStyle = isSelected ? '#ffffff' : segColor
           ctx.fill()
         }
       }
@@ -464,10 +495,20 @@ export default function SVGraph() {
           exponential: 'Exponential',
           sine: 'Sine Wave',
           stutter: 'Stutter',
+          spike: 'Spike',
           polynomial: 'Polynomial',
         }
+        const hovSegColors = {
+          linear: '#4da3f2',
+          exponential: '#cc88ff',
+          sine: '#88ff66',
+          stutter: '#ffcc44',
+          polynomial: '#ff8844',
+          spike: '#ff6688',
+        }
+        const hovColor = hovSegColors[seg.type] || '#4da3f2'
         const label = `${TYPE_LABELS[seg.type] || seg.type} · ${seg.pointCount} pts · ${(seg.error * 100).toFixed(1)}% fit`
-        chip(label, (sx + ex) / 2, 20, '#4da3f2', 'rgba(20,40,60,0.9)')
+        chip(label, (sx + ex) / 2, 20, hovColor, 'rgba(20,40,60,0.9)')
       }
     }
 

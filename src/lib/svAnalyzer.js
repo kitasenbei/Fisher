@@ -70,6 +70,113 @@ function fitStutter(ts, svs) {
   return { params: { highSV, lowSV, interval }, r2 }
 }
 
+function fitSpike(ts, svs) {
+  // Detect alternating pattern where one rail is ~constant (base)
+  // and the other follows a curve (envelope)
+  if (svs.length < 6) return null
+
+  // Split into odd/even rails
+  const evenVals = [],
+    oddVals = [],
+    evenTs = [],
+    oddTs = []
+  for (let i = 0; i < svs.length; i++) {
+    if (i % 2 === 0) {
+      evenVals.push(svs[i])
+      evenTs.push(ts[i])
+    } else {
+      oddVals.push(svs[i])
+      oddTs.push(ts[i])
+    }
+  }
+
+  // Check which rail is constant (base) and which is the envelope
+  const evenRange = Math.max(...evenVals) - Math.min(...evenVals)
+  const oddRange = Math.max(...oddVals) - Math.min(...oddVals)
+
+  let baseVals, envVals, envTs, baseIsEven
+  if (evenRange < 0.05 && oddRange > 0.1) {
+    baseVals = evenVals
+    envVals = oddVals
+    envTs = oddTs
+    baseIsEven = true
+  } else if (oddRange < 0.05 && evenRange > 0.1) {
+    baseVals = oddVals
+    envVals = evenVals
+    envTs = evenTs
+    baseIsEven = false
+  } else {
+    return null // neither rail is constant
+  }
+
+  // Base must be nearly constant
+  let baseMean = 0
+  for (const v of baseVals) baseMean += v
+  baseMean /= baseVals.length
+  for (const v of baseVals) {
+    if (Math.abs(v - baseMean) > SV_TOLERANCE * 2) return null
+  }
+
+  // Fit the envelope rail to a linear ramp
+  const envFit = fitLinear(envTs, envVals)
+  if (!envFit || envFit.r2 < 0.9) {
+    // Try polynomial
+    const polyFit = fitPolynomial(envTs, envVals)
+    if (!polyFit || polyFit.r2 < 0.9) return null
+
+    // Reconstruct predicted values for full R²
+    const predicted = svs.map((_, i) => {
+      if ((i % 2 === 0) === baseIsEven) return baseMean
+      const t = ts[i]
+      return polyFit.params.a * t * t + polyFit.params.b * t + polyFit.params.c
+    })
+    const r2 = rSquared(svs, predicted)
+
+    const intervals = []
+    for (let i = 1; i < ts.length; i++) intervals.push(ts[i] - ts[i - 1])
+    intervals.sort((a, b) => a - b)
+
+    return {
+      params: {
+        baseSV: baseMean,
+        envelope: 'polynomial',
+        envA: polyFit.params.a,
+        envB: polyFit.params.b,
+        envC: polyFit.params.c,
+        envelopeStart: envVals[0],
+        envelopeEnd: envVals[envVals.length - 1],
+        baseIsEven,
+        interval: intervals[Math.floor(intervals.length / 2)],
+      },
+      r2,
+    }
+  }
+
+  // Linear envelope — reconstruct full predicted values
+  const predicted = svs.map((_, i) => {
+    if ((i % 2 === 0) === baseIsEven) return baseMean
+    const t = ts[i]
+    return envFit.params.slope * t + envFit.params.intercept
+  })
+  const r2 = rSquared(svs, predicted)
+
+  const intervals = []
+  for (let i = 1; i < ts.length; i++) intervals.push(ts[i] - ts[i - 1])
+  intervals.sort((a, b) => a - b)
+
+  return {
+    params: {
+      baseSV: baseMean,
+      envelope: 'linear',
+      envelopeStart: envVals[0],
+      envelopeEnd: envVals[envVals.length - 1],
+      baseIsEven,
+      interval: intervals[Math.floor(intervals.length / 2)],
+    },
+    r2,
+  }
+}
+
 function fitLinear(ts, svs) {
   const n = ts.length
   let sumT = 0,
@@ -256,6 +363,16 @@ export function evaluateSegment(segment, t) {
       return params.a * t * t + params.b * t + params.c
     case 'stutter':
       return Math.round(t * (segment.pointCount - 1)) % 2 === 0 ? params.highSV : params.lowSV
+    case 'spike': {
+      const step = Math.round(t * (segment.pointCount - 1))
+      const isBase = (step % 2 === 0) === params.baseIsEven
+      if (isBase) return params.baseSV
+      if (params.envelope === 'polynomial') {
+        const ms = segment.startMs + t * (segment.endMs - segment.startMs)
+        return params.envA * ms * ms + params.envB * ms + params.envC
+      }
+      return params.envelopeStart + (params.envelopeEnd - params.envelopeStart) * t
+    }
     default:
       return 0
   }
@@ -277,6 +394,7 @@ export function segmentsForRange(segments, startMs, endMs) {
 
 const THRESHOLDS = {
   stutter: 0.95,
+  spike: 0.92,
   linear: 0.98,
   exponential: 0.95,
   sine: 0.93,
@@ -287,6 +405,9 @@ function tryFitWindow(times, svs) {
   // Try fits in order of cheapness, return first that passes threshold
   const stutter = fitStutter(times, svs)
   if (stutter && stutter.r2 >= THRESHOLDS.stutter) return { type: 'stutter', ...stutter }
+
+  const spike = fitSpike(times, svs)
+  if (spike && spike.r2 >= THRESHOLDS.spike) return { type: 'spike', ...spike }
 
   const linear = fitLinear(times, svs)
   if (linear && linear.r2 >= THRESHOLDS.linear) return { type: 'linear', ...linear }

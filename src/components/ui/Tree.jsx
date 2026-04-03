@@ -17,7 +17,11 @@ function TreeNode({ node, depth = 0, onSelect, selected }) {
         }}
       >
         {hasChildren ? (
-          <svg className={`w-2 h-2 shrink-0 transition-transform duration-100 ${expanded ? 'rotate-90' : ''}`} viewBox="0 0 6 8" fill="currentColor">
+          <svg
+            className={`w-2 h-2 shrink-0 transition-transform duration-100 ${expanded ? 'rotate-90' : ''}`}
+            viewBox="0 0 6 8"
+            fill="currentColor"
+          >
             <path d="M1 0.5L5 4L1 7.5V0.5Z" />
           </svg>
         ) : (

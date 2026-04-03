@@ -1,7 +1,15 @@
 import { useRef, useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 
-export default function FloatingPanel({ children, title = '', onClose, defaultX = 100, defaultY = 100, defaultWidth = 640, defaultHeight = 480 }) {
+export default function FloatingPanel({
+  children,
+  title = '',
+  onClose,
+  defaultX = 100,
+  defaultY = 100,
+  defaultWidth = 640,
+  defaultHeight = 480,
+}) {
   const panelRef = useRef(null)
   const [pos, setPos] = useState({ x: defaultX, y: defaultY })
   const [size, setSize] = useState({ w: defaultWidth, h: defaultHeight })
@@ -23,10 +31,16 @@ export default function FloatingPanel({ children, title = '', onClose, defaultX 
         })
       }
     }
-    function onUp() { dragRef.current = null; resizeRef.current = null }
+    function onUp() {
+      dragRef.current = null
+      resizeRef.current = null
+    }
     window.addEventListener('mousemove', onMove)
     window.addEventListener('mouseup', onUp)
-    return () => { window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp) }
+    return () => {
+      window.removeEventListener('mousemove', onMove)
+      window.removeEventListener('mouseup', onUp)
+    }
   }, [])
 
   return (
@@ -52,9 +66,7 @@ export default function FloatingPanel({ children, title = '', onClose, defaultX 
       </div>
 
       {/* Content */}
-      <div className="flex-1 min-h-0 relative">
-        {children}
-      </div>
+      <div className="flex-1 min-h-0 relative">{children}</div>
 
       {/* Resize handle */}
       <div

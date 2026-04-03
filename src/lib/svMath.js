@@ -46,7 +46,7 @@ export function msPerBeatAtTime(timingPoints, ms) {
  */
 export function snapToBeat(ms, timingPoints, divisor = 4) {
   const mpb = msPerBeatAtTime(timingPoints, ms)
-  const bpmPoint = timingPoints.find(tp => tp.uninherited && tp.offset <= ms)
+  const bpmPoint = timingPoints.find((tp) => tp.uninherited && tp.offset <= ms)
   const origin = bpmPoint ? bpmPoint.offset : 0
   const interval = mpb / divisor
   const relative = ms - origin
@@ -64,8 +64,12 @@ export function linearRamp(startMs, endMs, startSV, endSV, count) {
       offset: startMs + t * (endMs - startMs),
       svMultiplier: startSV + t * (endSV - startSV),
       msPerBeat: -100 / (startSV + t * (endSV - startSV)),
-      meter: 4, sampleSet: 0, sampleIndex: 0, volume: 100,
-      uninherited: false, effects: 0,
+      meter: 4,
+      sampleSet: 0,
+      sampleIndex: 0,
+      volume: 100,
+      uninherited: false,
+      effects: 0,
     })
   }
   return points
@@ -81,8 +85,12 @@ export function exponentialRamp(startMs, endMs, startSV, endSV, count, exponent 
       offset: startMs + t * (endMs - startMs),
       svMultiplier: sv,
       msPerBeat: -100 / sv,
-      meter: 4, sampleSet: 0, sampleIndex: 0, volume: 100,
-      uninherited: false, effects: 0,
+      meter: 4,
+      sampleSet: 0,
+      sampleIndex: 0,
+      volume: 100,
+      uninherited: false,
+      effects: 0,
     })
   }
   return points
@@ -97,8 +105,12 @@ export function stutterPattern(startMs, msPerBeat, highSV, lowSV, count) {
       offset,
       svMultiplier: sv,
       msPerBeat: -100 / sv,
-      meter: 4, sampleSet: 0, sampleIndex: 0, volume: 100,
-      uninherited: false, effects: 0,
+      meter: 4,
+      sampleSet: 0,
+      sampleIndex: 0,
+      volume: 100,
+      uninherited: false,
+      effects: 0,
     })
   }
   return points
@@ -114,8 +126,12 @@ export function sineWave(startMs, endMs, centerSV, amplitude, count) {
       offset: startMs + t * (endMs - startMs),
       svMultiplier: clamped,
       msPerBeat: -100 / clamped,
-      meter: 4, sampleSet: 0, sampleIndex: 0, volume: 100,
-      uninherited: false, effects: 0,
+      meter: 4,
+      sampleSet: 0,
+      sampleIndex: 0,
+      volume: 100,
+      uninherited: false,
+      effects: 0,
     })
   }
   return points

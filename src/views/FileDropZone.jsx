@@ -3,7 +3,7 @@ import JSZip from 'jszip'
 import { useEditor } from '../stores/editorStore'
 import { parse, parseStoryboard } from '../lib/osuParser'
 
-const flush = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+const flush = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
 
 async function extractOsz(file, onProgress) {
   onProgress?.({ message: 'Reading archive...', progress: 0 })
@@ -41,9 +41,9 @@ async function extractOsz(file, onProgress) {
       } else {
         // Combine: .osb sprites get IDs shifted past .osu sprites
         const osuSb = parsed.storyboard
-        const idOffset = osuSb.sprites.length ? Math.max(...osuSb.sprites.map(s => s.id)) + 1 : 0
-        const shiftedSprites = osbStoryboard.sprites.map(s => ({ ...s, id: s.id + idOffset }))
-        const shiftedCmds = osbStoryboard.commands.map(c => ({ ...c, sprite_id: c.sprite_id + idOffset }))
+        const idOffset = osuSb.sprites.length ? Math.max(...osuSb.sprites.map((s) => s.id)) + 1 : 0
+        const shiftedSprites = osbStoryboard.sprites.map((s) => ({ ...s, id: s.id + idOffset }))
+        const shiftedCmds = osbStoryboard.commands.map((c) => ({ ...c, sprite_id: c.sprite_id + idOffset }))
         const mergedImages = [...osuSb.images]
         for (const img of osbStoryboard.images) {
           if (!mergedImages.includes(img)) mergedImages.push(img)
@@ -65,8 +65,8 @@ async function extractOsz(file, onProgress) {
   for (const f of osuFiles) {
     const bgName = f.parsed.general.backgroundFilename
     if (!bgName) continue
-    const bgEntry = zip.files[bgName] ||
-      zip.files[Object.keys(zip.files).find(k => k.toLowerCase() === bgName.toLowerCase())]
+    const bgEntry =
+      zip.files[bgName] || zip.files[Object.keys(zip.files).find((k) => k.toLowerCase() === bgName.toLowerCase())]
     if (bgEntry) {
       const blob = await bgEntry.async('blob')
       bgUrl = URL.createObjectURL(blob)
@@ -85,8 +85,8 @@ export async function loadDifficulty(chosen, zip, dispatch, audio) {
   // Load audio referenced by the chosen difficulty
   if (chosen.parsed.general.audioFilename) {
     const audioName = chosen.parsed.general.audioFilename
-    const audioEntry = zip.files[audioName] ||
-      zip.files[Object.keys(zip.files).find(k => k.toLowerCase() === audioName.toLowerCase())]
+    const audioEntry =
+      zip.files[audioName] || zip.files[Object.keys(zip.files).find((k) => k.toLowerCase() === audioName.toLowerCase())]
     if (audioEntry) {
       const blob = await audioEntry.async('blob')
       const audioFile = new File([blob], audioName, { type: 'audio/mpeg' })
@@ -113,8 +113,10 @@ export async function loadDifficulty(chosen, zip, dispatch, audio) {
       // Yield every 5 sprites so the bar visually updates
       if (i % 5 === 0) await flush()
       const normalized = imgPath.replace(/\\/g, '/')
-      const entry = zip.files[imgPath] || zip.files[normalized] ||
-        zip.files[Object.keys(zip.files).find(k => k.replace(/\\/g, '/').toLowerCase() === normalized.toLowerCase())]
+      const entry =
+        zip.files[imgPath] ||
+        zip.files[normalized] ||
+        zip.files[Object.keys(zip.files).find((k) => k.replace(/\\/g, '/').toLowerCase() === normalized.toLowerCase())]
       if (entry) {
         const blob = await entry.async('blob')
         urls[normalized] = URL.createObjectURL(blob)
@@ -126,44 +128,65 @@ export async function loadDifficulty(chosen, zip, dispatch, audio) {
   }
 
   dispatch('SET_LOADING', { message: 'Done', progress: 100 })
-  await new Promise(r => setTimeout(r, 300))
+  await new Promise((r) => setTimeout(r, 300))
   dispatch('CLEAR_LOADING')
 }
 
 export default function FileDropZone() {
   const { dispatch, audio } = useEditor()
 
-  const handleFiles = useCallback(async (files) => {
-    const onProgress = (p) => dispatch('SET_LOADING', p)
-    for (const file of files) {
-      if (file.name.endsWith('.osz')) {
-        const extracted = await extractOsz(file, onProgress)
-        if (extracted.osuFiles.length === 1) {
-          await loadDifficulty(extracted.osuFiles[0], extracted.zip, dispatch, audio)
-        } else if (extracted.osuFiles.length > 1) {
-          dispatch('CLEAR_LOADING')
-          dispatch('SET_PENDING_OSZ', extracted)
+  const handleFiles = useCallback(
+    async (files) => {
+      const onProgress = (p) => dispatch('SET_LOADING', p)
+      for (const file of files) {
+        if (file.name.endsWith('.osz')) {
+          const extracted = await extractOsz(file, onProgress)
+          if (extracted.osuFiles.length === 1) {
+            await loadDifficulty(extracted.osuFiles[0], extracted.zip, dispatch, audio)
+          } else if (extracted.osuFiles.length > 1) {
+            dispatch('CLEAR_LOADING')
+            dispatch('SET_PENDING_OSZ', extracted)
+          }
+        } else if (file.name.endsWith('.osu')) {
+          const text = await file.text()
+          const parsed = parse(text)
+          dispatch('LOAD_FILE', { raw: text, parsed, filename: file.name })
+        } else if (file.name.match(/\.(mp3|ogg|wav)$/i)) {
+          await audio.load(file)
+          dispatch('SET_AUDIO', file)
         }
-      } else if (file.name.endsWith('.osu')) {
-        const text = await file.text()
-        const parsed = parse(text)
-        dispatch('LOAD_FILE', { raw: text, parsed, filename: file.name })
-      } else if (file.name.match(/\.(mp3|ogg|wav)$/i)) {
-        await audio.load(file)
-        dispatch('SET_AUDIO', file)
       }
-    }
-  }, [dispatch, audio])
+    },
+    [dispatch, audio],
+  )
 
   // Window drag/drop listeners
   const [dragging, setDragging] = useState(false)
 
   useEffect(() => {
     let dragCount = 0
-    function onDragEnter(e) { e.preventDefault(); dragCount++; setDragging(true) }
-    function onDragLeave(e) { e.preventDefault(); dragCount--; if (dragCount <= 0) { dragCount = 0; setDragging(false) } }
-    function onDragOver(e) { e.preventDefault() }
-    function onDrop(e) { e.preventDefault(); dragCount = 0; setDragging(false); handleFiles(e.dataTransfer.files) }
+    function onDragEnter(e) {
+      e.preventDefault()
+      dragCount++
+      setDragging(true)
+    }
+    function onDragLeave(e) {
+      e.preventDefault()
+      dragCount--
+      if (dragCount <= 0) {
+        dragCount = 0
+        setDragging(false)
+      }
+    }
+    function onDragOver(e) {
+      e.preventDefault()
+    }
+    function onDrop(e) {
+      e.preventDefault()
+      dragCount = 0
+      setDragging(false)
+      handleFiles(e.dataTransfer.files)
+    }
 
     window.addEventListener('dragenter', onDragEnter)
     window.addEventListener('dragleave', onDragLeave)

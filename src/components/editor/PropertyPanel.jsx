@@ -1,7 +1,15 @@
 import { useState } from 'react'
 import GripHandle from './GripHandle'
 
-export default function PropertyPanel({ title, children, collapsed: controlledCollapsed, onToggle, draggable, actions, className = '' }) {
+export default function PropertyPanel({
+  title,
+  children,
+  collapsed: controlledCollapsed,
+  onToggle,
+  draggable,
+  actions,
+  className = '',
+}) {
   const isControlled = controlledCollapsed !== undefined && typeof onToggle === 'function'
   const [internalCollapsed, setInternalCollapsed] = useState(false)
   const collapsed = isControlled ? controlledCollapsed : internalCollapsed
@@ -10,7 +18,7 @@ export default function PropertyPanel({ title, children, collapsed: controlledCo
     if (isControlled) {
       onToggle()
     } else {
-      setInternalCollapsed(c => !c)
+      setInternalCollapsed((c) => !c)
     }
   }
 
@@ -23,7 +31,11 @@ export default function PropertyPanel({ title, children, collapsed: controlledCo
             className="flex-1 flex items-center gap-1.5 px-2 py-1 text-[11px] text-[#cccccc] cursor-default select-none"
             onClick={handleToggle}
           >
-            <svg className={`w-2 h-2 text-[#999999] transition-transform duration-100 ${collapsed ? '' : 'rotate-90'}`} viewBox="0 0 6 8" fill="currentColor">
+            <svg
+              className={`w-2 h-2 text-[#999999] transition-transform duration-100 ${collapsed ? '' : 'rotate-90'}`}
+              viewBox="0 0 6 8"
+              fill="currentColor"
+            >
               <path d="M1 0.5L5 4L1 7.5V0.5Z" />
             </svg>
             {title}
@@ -34,11 +46,7 @@ export default function PropertyPanel({ title, children, collapsed: controlledCo
           </div>
         </div>
       )}
-      {!collapsed && (
-        <div className="px-2 py-1.5 space-y-1.5">
-          {children}
-        </div>
-      )}
+      {!collapsed && <div className="px-2 py-1.5 space-y-1.5">{children}</div>}
     </div>
   )
 }

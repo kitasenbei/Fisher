@@ -42,16 +42,17 @@ export default function ContextMenu({ pos, items = [], onClose }) {
             key={i}
             type="button"
             className={`w-full text-left px-2.5 py-[3px] text-[11px] cursor-default select-none flex justify-between items-center ${
-              item.disabled
-                ? 'text-[#666666] pointer-events-none'
-                : 'text-[#cccccc] hover:bg-[#404040]'
+              item.disabled ? 'text-[#666666] pointer-events-none' : 'text-[#cccccc] hover:bg-[#404040]'
             }`}
-            onClick={() => { item.action?.(); onClose() }}
+            onClick={() => {
+              item.action?.()
+              onClose()
+            }}
           >
             <span>{item.label}</span>
             {item.shortcut && <span className="text-[#666666] text-[10px] ml-4">{item.shortcut}</span>}
           </button>
-        )
+        ),
       )}
     </div>
   )

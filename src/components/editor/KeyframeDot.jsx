@@ -23,9 +23,13 @@ export default function KeyframeDot({ active: controlledActive, onChange, classN
       onClick={handleClick}
       title={active ? 'Remove keyframe' : 'Insert keyframe'}
     >
-      <svg className={`w-[7px] h-[7px] transition-colors ${
-        active ? 'text-[#f5c542]' : 'text-[#535353] group-hover:text-[#777777]'
-      }`} viewBox="0 0 8 8" fill="currentColor">
+      <svg
+        className={`w-[7px] h-[7px] transition-colors ${
+          active ? 'text-[#f5c542]' : 'text-[#535353] group-hover:text-[#777777]'
+        }`}
+        viewBox="0 0 8 8"
+        fill="currentColor"
+      >
         <path d="M4 0L7.5 4L4 8L0.5 4Z" />
       </svg>
     </button>

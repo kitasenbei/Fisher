@@ -37,9 +37,7 @@ export default function Select({ label, id, icon, options = [], value, onChange,
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       e.preventDefault()
       const idx = options.findIndex((o) => o.value === selected)
-      const next = e.key === 'ArrowDown'
-        ? Math.min(idx + 1, options.length - 1)
-        : Math.max(idx - 1, 0)
+      const next = e.key === 'ArrowDown' ? Math.min(idx + 1, options.length - 1) : Math.max(idx - 1, 0)
       handleSelect(options[next])
     }
   }
@@ -62,7 +60,11 @@ export default function Select({ label, id, icon, options = [], value, onChange,
           aria-expanded={open}
           {...props}
         >
-          {selectedIcon && <span className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center text-[#999999]">{selectedIcon}</span>}
+          {selectedIcon && (
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 flex items-center text-[#999999]">
+              {selectedIcon}
+            </span>
+          )}
           {selectedLabel}
         </button>
         <svg
@@ -83,9 +85,7 @@ export default function Select({ label, id, icon, options = [], value, onChange,
                     role="option"
                     aria-selected={opt.value === selected}
                     className={`px-2.5 py-1 text-[12px] cursor-default select-none flex items-center gap-1.5 ${
-                      opt.value === selected
-                        ? 'bg-[#2d8ceb] text-white'
-                        : 'text-[#cccccc] hover:bg-[#404040]'
+                      opt.value === selected ? 'bg-[#2d8ceb] text-white' : 'text-[#cccccc] hover:bg-[#404040]'
                     }`}
                     onMouseDown={() => handleSelect(opt)}
                   >

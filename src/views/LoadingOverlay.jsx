@@ -24,13 +24,15 @@ export default function LoadingOverlay() {
               className="h-full bg-[#2d8ceb] rounded-[1px] transition-[width] duration-150"
               style={{
                 width: `${Math.min(Math.max(loading.progress, 0), 100)}%`,
-                backgroundImage: loading.progress < 100
-                  ? 'linear-gradient(90deg, #2d8ceb 0%, #4da3f2 50%, #2d8ceb 100%)'
-                  : 'repeating-linear-gradient(-45deg, #2d8ceb, #2d8ceb 4px, #4da3f2 4px, #4da3f2 8px)',
+                backgroundImage:
+                  loading.progress < 100
+                    ? 'linear-gradient(90deg, #2d8ceb 0%, #4da3f2 50%, #2d8ceb 100%)'
+                    : 'repeating-linear-gradient(-45deg, #2d8ceb, #2d8ceb 4px, #4da3f2 4px, #4da3f2 8px)',
                 backgroundSize: loading.progress < 100 ? '200% 100%' : '16px 16px',
-                animation: loading.progress < 100
-                  ? 'loading-shimmer 1.5s ease-in-out infinite'
-                  : 'loading-stripe 0.5s linear infinite',
+                animation:
+                  loading.progress < 100
+                    ? 'loading-shimmer 1.5s ease-in-out infinite'
+                    : 'loading-stripe 0.5s linear infinite',
               }}
             />
           </div>

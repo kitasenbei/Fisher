@@ -39,7 +39,11 @@ export default function PatternDialog({ open, onClose }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} className="bg-[#2b2b2b] border border-[#3b3b3b] rounded-[3px] p-0 shadow-lg shadow-black/40 backdrop:bg-black/50 w-[340px]">
+    <Modal
+      open={open}
+      onClose={onClose}
+      className="bg-[#2b2b2b] border border-[#3b3b3b] rounded-[3px] p-0 shadow-lg shadow-black/40 backdrop:bg-black/50 w-[340px]"
+    >
       <div className="px-3 py-2 border-b border-[#3b3b3b] text-[12px]">Insert SV Pattern</div>
       <div className="p-3 space-y-2">
         <PropertyPanel title="Pattern Type">
@@ -66,33 +70,75 @@ export default function PatternDialog({ open, onClose }) {
             </PropertyRow>
           )}
           <PropertyRow label="Count">
-            <NumberInput id="pat-count" value={count} min={2} max={500} step={1} onChange={(e) => setCount(e.target.value)} />
+            <NumberInput
+              id="pat-count"
+              value={count}
+              min={2}
+              max={500}
+              step={1}
+              onChange={(e) => setCount(e.target.value)}
+            />
           </PropertyRow>
 
           {(pattern === 'linear' || pattern === 'exponential') && (
             <>
               <PropertyRow label="Start SV">
-                <NumberInput id="pat-ssv" value={startSV} min={0.1} max={10} step={0.01} onChange={(e) => setStartSV(e.target.value)} />
+                <NumberInput
+                  id="pat-ssv"
+                  value={startSV}
+                  min={0.1}
+                  max={10}
+                  step={0.01}
+                  onChange={(e) => setStartSV(e.target.value)}
+                />
               </PropertyRow>
               <PropertyRow label="End SV">
-                <NumberInput id="pat-esv" value={endSV} min={0.1} max={10} step={0.01} onChange={(e) => setEndSV(e.target.value)} />
+                <NumberInput
+                  id="pat-esv"
+                  value={endSV}
+                  min={0.1}
+                  max={10}
+                  step={0.01}
+                  onChange={(e) => setEndSV(e.target.value)}
+                />
               </PropertyRow>
             </>
           )}
 
           {pattern === 'exponential' && (
             <PropertyRow label="Exponent">
-              <NumberInput id="pat-exp" value={exponent} min={0.1} max={10} step={0.1} onChange={(e) => setExponent(e.target.value)} />
+              <NumberInput
+                id="pat-exp"
+                value={exponent}
+                min={0.1}
+                max={10}
+                step={0.1}
+                onChange={(e) => setExponent(e.target.value)}
+              />
             </PropertyRow>
           )}
 
           {pattern === 'stutter' && (
             <>
               <PropertyRow label="High SV">
-                <NumberInput id="pat-hsv" value={highSV} min={0.1} max={10} step={0.01} onChange={(e) => setHighSV(e.target.value)} />
+                <NumberInput
+                  id="pat-hsv"
+                  value={highSV}
+                  min={0.1}
+                  max={10}
+                  step={0.01}
+                  onChange={(e) => setHighSV(e.target.value)}
+                />
               </PropertyRow>
               <PropertyRow label="Low SV">
-                <NumberInput id="pat-lsv" value={lowSV} min={0.1} max={10} step={0.01} onChange={(e) => setLowSV(e.target.value)} />
+                <NumberInput
+                  id="pat-lsv"
+                  value={lowSV}
+                  min={0.1}
+                  max={10}
+                  step={0.01}
+                  onChange={(e) => setLowSV(e.target.value)}
+                />
               </PropertyRow>
             </>
           )}
@@ -100,18 +146,36 @@ export default function PatternDialog({ open, onClose }) {
           {pattern === 'sine' && (
             <>
               <PropertyRow label="Center SV">
-                <NumberInput id="pat-csv" value={centerSV} min={0.1} max={10} step={0.01} onChange={(e) => setCenterSV(e.target.value)} />
+                <NumberInput
+                  id="pat-csv"
+                  value={centerSV}
+                  min={0.1}
+                  max={10}
+                  step={0.01}
+                  onChange={(e) => setCenterSV(e.target.value)}
+                />
               </PropertyRow>
               <PropertyRow label="Amplitude">
-                <NumberInput id="pat-amp" value={amplitude} min={0.01} max={5} step={0.01} onChange={(e) => setAmplitude(e.target.value)} />
+                <NumberInput
+                  id="pat-amp"
+                  value={amplitude}
+                  min={0.01}
+                  max={5}
+                  step={0.01}
+                  onChange={(e) => setAmplitude(e.target.value)}
+                />
               </PropertyRow>
             </>
           )}
         </PropertyPanel>
 
         <div className="flex justify-end gap-1.5 pt-1">
-          <Button variant="secondary" size="sm" onClick={onClose}>Cancel</Button>
-          <Button variant="primary" size="sm" onClick={handleInsert}>Insert {count} Points</Button>
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button variant="primary" size="sm" onClick={handleInsert}>
+            Insert {count} Points
+          </Button>
         </div>
       </div>
     </Modal>

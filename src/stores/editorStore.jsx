@@ -4,10 +4,10 @@ import AudioEngine from '../lib/audioEngine'
 const EditorContext = createContext(null)
 
 const initialState = {
-  file: null,         // { raw, parsed, filename }
+  file: null, // { raw, parsed, filename }
   audioFile: null,
-  pendingOsz: null,   // { osuFiles, zip } — waiting for difficulty selection
-  loading: null,       // { message, progress (0-100) } — file loading state
+  pendingOsz: null, // { osuFiles, zip } — waiting for difficulty selection
+  loading: null, // { message, progress (0-100) } — file loading state
   storyboardImageUrls: null, // { path: blobUrl } map for storyboard images
   timingPoints: [],
   selection: new Set(),
@@ -91,9 +91,9 @@ function reducer(state, action) {
     }
     case 'UPDATE_POINT': {
       const { index, updates } = action.payload
-      const newPoints = state.timingPoints.map((tp, i) =>
-        i === index ? { ...tp, ...updates } : tp
-      ).sort((a, b) => a.offset - b.offset)
+      const newPoints = state.timingPoints
+        .map((tp, i) => (i === index ? { ...tp, ...updates } : tp))
+        .sort((a, b) => a.offset - b.offset)
       return {
         ...state,
         undoStack: [...state.undoStack, state.timingPoints],
@@ -171,11 +171,7 @@ export function EditorProvider({ children }) {
 
   const d = useCallback((type, payload) => dispatch({ type, payload }), [])
 
-  return (
-    <EditorContext.Provider value={{ state, dispatch: d, audio }}>
-      {children}
-    </EditorContext.Provider>
-  )
+  return <EditorContext.Provider value={{ state, dispatch: d, audio }}>{children}</EditorContext.Provider>
 }
 
 export function useEditor() {

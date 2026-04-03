@@ -15,11 +15,7 @@ export default function Modal({ open, onClose, children, className = '' }) {
   }, [open])
 
   return (
-    <dialog
-      ref={dialogRef}
-      onClose={onClose}
-      className={`fixed inset-0 m-auto ${className}`}
-    >
+    <dialog ref={dialogRef} onClose={onClose} className={`fixed inset-0 m-auto ${className}`}>
       {children}
     </dialog>
   )

@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import Tooltip from '../ui/Tooltip'
 
-export default function IconTabStrip({ tabs = [], value: controlledValue, onChange, position = 'left', className = '' }) {
+export default function IconTabStrip({
+  tabs = [],
+  value: controlledValue,
+  onChange,
+  position = 'left',
+  className = '',
+}) {
   const isControlled = controlledValue !== undefined && onChange !== undefined
   const [internal, setInternal] = useState(controlledValue ?? tabs[0]?.id)
   const active = isControlled ? controlledValue : internal
@@ -45,9 +51,7 @@ export default function IconTabStrip({ tabs = [], value: controlledValue, onChan
         <Tooltip key={tab.id} content={tab.label} position={tipPos}>
           <button
             className={`w-5 h-5 flex items-center justify-center rounded-[3px] cursor-default transition-colors ${
-              active === tab.id
-                ? 'bg-[#4b6fa6] text-white'
-                : 'text-[#999999] hover:bg-[#3c3c3c] hover:text-[#cccccc]'
+              active === tab.id ? 'bg-[#4b6fa6] text-white' : 'text-[#999999] hover:bg-[#3c3c3c] hover:text-[#cccccc]'
             }`}
             onClick={() => handleClick(tab)}
           >

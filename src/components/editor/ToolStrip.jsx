@@ -1,7 +1,13 @@
 import { useState } from 'react'
 import Tooltip from '../ui/Tooltip'
 
-export default function ToolStrip({ tools = [], value: controlledValue, onChange, orientation = 'vertical', className = '' }) {
+export default function ToolStrip({
+  tools = [],
+  value: controlledValue,
+  onChange,
+  orientation = 'vertical',
+  className = '',
+}) {
   const isControlled = controlledValue !== undefined && onChange !== undefined
   const [internal, setInternal] = useState(controlledValue ?? tools.find((t) => !t.separator)?.id)
   const active = isControlled ? controlledValue : internal
@@ -23,7 +29,13 @@ export default function ToolStrip({ tools = [], value: controlledValue, onChange
         tool.separator ? (
           <div key={i} className={isVertical ? 'w-5 h-px bg-[#3b3b3b] my-1' : 'h-5 w-px bg-[#3b3b3b] mx-1'} />
         ) : (
-          <Tooltip key={tool.id} content={tool.label} description={tool.description} shortcut={tool.shortcut} position={isVertical ? 'right' : 'bottom'}>
+          <Tooltip
+            key={tool.id}
+            content={tool.label}
+            description={tool.description}
+            shortcut={tool.shortcut}
+            position={isVertical ? 'right' : 'bottom'}
+          >
             <button
               className={`w-7 h-7 flex items-center justify-center rounded-[3px] cursor-default transition-colors ${
                 active === tool.id
@@ -35,7 +47,7 @@ export default function ToolStrip({ tools = [], value: controlledValue, onChange
               {tool.icon}
             </button>
           </Tooltip>
-        )
+        ),
       )}
     </div>
   )

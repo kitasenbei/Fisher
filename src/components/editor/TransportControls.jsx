@@ -1,6 +1,15 @@
 import Tooltip from '../ui/Tooltip'
 
-export default function TransportControls({ icons = {}, playing, frame, totalFrames, onPlay, onPause, onFrameChange, className = '' }) {
+export default function TransportControls({
+  icons = {},
+  playing,
+  frame,
+  totalFrames,
+  onPlay,
+  onPause,
+  onFrameChange,
+  className = '',
+}) {
   const buttons = [
     { icon: icons.jumpToStart, tip: 'Jump to Start', action: () => onFrameChange(1) },
     { icon: icons.stepBack, tip: 'Step Back', action: () => onFrameChange(Math.max(1, frame - 1)) },

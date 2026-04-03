@@ -19,14 +19,14 @@ function colColor(col, keyCount) {
 
 // StepMania quantization colors
 const QUANT_COLORS = [
-  { div: 4, color: '#ff0000' },   // 1/4 — red
-  { div: 8, color: '#0066ff' },   // 1/8 — blue
-  { div: 12, color: '#cc00cc' },  // 1/12 — purple
-  { div: 16, color: '#ccaa00' },  // 1/16 — yellow
-  { div: 24, color: '#ff66cc' },  // 1/24 — pink
-  { div: 32, color: '#ff8800' },  // 1/32 — orange
-  { div: 48, color: '#00cccc' },  // 1/48 — cyan
-  { div: 64, color: '#00cc00' },  // 1/64 — green
+  { div: 4, color: '#ff0000' }, // 1/4 — red
+  { div: 8, color: '#0066ff' }, // 1/8 — blue
+  { div: 12, color: '#cc00cc' }, // 1/12 — purple
+  { div: 16, color: '#ccaa00' }, // 1/16 — yellow
+  { div: 24, color: '#ff66cc' }, // 1/24 — pink
+  { div: 32, color: '#ff8800' }, // 1/32 — orange
+  { div: 48, color: '#00cccc' }, // 1/48 — cyan
+  { div: 64, color: '#00cc00' }, // 1/64 — green
 ]
 
 function quantColor(noteTimeMs, timingPoints) {
@@ -88,14 +88,26 @@ async function loadSkinZip(file) {
 
     for (const [path, entry] of Object.entries(zip.files)) {
       if (entry.dir || !imgExts.test(path)) continue
-      const name = path.replace(/^.*\//, '').replace(/\.[^.]+$/, '').toLowerCase()
+      const name = path
+        .replace(/^.*\//, '')
+        .replace(/\.[^.]+$/, '')
+        .toLowerCase()
       // Look for mania note/receptor images
-      if (name.includes('note') || name.includes('receptor') || name.includes('key') ||
-          name.includes('holdbody') || name.includes('holdcap')) {
+      if (
+        name.includes('note') ||
+        name.includes('receptor') ||
+        name.includes('key') ||
+        name.includes('holdbody') ||
+        name.includes('holdcap')
+      ) {
         const blob = await entry.async('blob')
         const url = URL.createObjectURL(blob)
         const img = new Image()
-        await new Promise((resolve) => { img.onload = resolve; img.onerror = resolve; img.src = url })
+        await new Promise((resolve) => {
+          img.onload = resolve
+          img.onerror = resolve
+          img.src = url
+        })
         images[name] = img
       }
     }
@@ -146,10 +158,20 @@ export default function ManiaPreview() {
     function frame() {
       if (!running) return
       const ctx = canvas.getContext('2d')
-      if (!ctx) { animRef.current = requestAnimationFrame(frame); return }
+      if (!ctx) {
+        animRef.current = requestAnimationFrame(frame)
+        return
+      }
 
       const { w: W, h: H } = sizeRef.current
-      const { timingPoints: tp, playback: pb, scrollSpeed: ss, hitObjects: ho, keyCount: kc, colorMode: cm } = stateRef.current
+      const {
+        timingPoints: tp,
+        playback: pb,
+        scrollSpeed: ss,
+        hitObjects: ho,
+        keyCount: kc,
+        colorMode: cm,
+      } = stateRef.current
       const skin = skinImagesRef.current
 
       const RECEPTOR_Y = H - 60
@@ -268,7 +290,10 @@ export default function ManiaPreview() {
     }
 
     animRef.current = requestAnimationFrame(frame)
-    return () => { running = false; cancelAnimationFrame(animRef.current) }
+    return () => {
+      running = false
+      cancelAnimationFrame(animRef.current)
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Resize canvas
@@ -323,7 +348,7 @@ export default function ManiaPreview() {
               icon: <Palette size={12} />,
               label: colorMode === 'normal' ? 'Switch to BPM colors' : 'Switch to column colors',
               active: colorMode === 'quant',
-              action: () => setColorMode(m => m === 'normal' ? 'quant' : 'normal'),
+              action: () => setColorMode((m) => (m === 'normal' ? 'quant' : 'normal')),
             },
             {
               icon: <Upload size={12} />,

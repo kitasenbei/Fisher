@@ -11,7 +11,10 @@ function hsvToHex(h, s, v) {
   else if (h < 240) [r, g, b] = [0, x, c]
   else if (h < 300) [r, g, b] = [x, 0, c]
   else [r, g, b] = [c, 0, x]
-  const toHex = (n) => Math.round((n + m) * 255).toString(16).padStart(2, '0')
+  const toHex = (n) =>
+    Math.round((n + m) * 255)
+      .toString(16)
+      .padStart(2, '0')
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`
 }
 
@@ -38,7 +41,9 @@ export default function ColorPicker({ label, value = '#ff0000', onChange, classN
       emitColor(hue, s, v)
     }
     update(e)
-    function onMove(ev) { update(ev) }
+    function onMove(ev) {
+      update(ev)
+    }
     function onUp() {
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onUp)
@@ -55,7 +60,9 @@ export default function ColorPicker({ label, value = '#ff0000', onChange, classN
       emitColor(h, sat, val)
     }
     update(e)
-    function onMove(ev) { update(ev) }
+    function onMove(ev) {
+      update(ev)
+    }
     function onUp() {
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onUp)
@@ -82,7 +89,10 @@ export default function ColorPicker({ label, value = '#ff0000', onChange, classN
               style={{ background: `linear-gradient(to right, white, hsl(${hue}, 100%, 50%))` }}
               onMouseDown={handleArea}
             >
-              <div className="absolute inset-0 rounded-[3px]" style={{ background: 'linear-gradient(to bottom, transparent, black)' }} />
+              <div
+                className="absolute inset-0 rounded-[3px]"
+                style={{ background: 'linear-gradient(to bottom, transparent, black)' }}
+              />
               <div
                 className="absolute w-2 h-2 rounded-full border-2 border-white -translate-x-1/2 -translate-y-1/2 pointer-events-none"
                 style={{ left: `${sat * 100}%`, top: `${(1 - val) * 100}%` }}

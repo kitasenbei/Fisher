@@ -6,8 +6,8 @@ const COMBO_COLORS = ['#ff6688', '#66bbff', '#88ff66', '#ffcc44', '#cc88ff', '#f
 
 export function getAR(ar) {
   if (ar === undefined || ar === null) ar = 5
-  const preempt = ar < 5 ? 1200 + 600 * (5 - ar) / 5 : 1200 - 750 * (ar - 5) / 5
-  const fadeIn = ar < 5 ? 800 + 400 * (5 - ar) / 5 : 800 - 500 * (ar - 5) / 5
+  const preempt = ar < 5 ? 1200 + (600 * (5 - ar)) / 5 : 1200 - (750 * (ar - 5)) / 5
+  const fadeIn = ar < 5 ? 800 + (400 * (5 - ar)) / 5 : 800 - (500 * (ar - 5)) / 5
   return { preempt, fadeIn }
 }
 
@@ -21,14 +21,16 @@ function computeSliderPath(curvePoints, curveType, length) {
   if (curvePoints.length < 2) return curvePoints
   let path
   if (curveType === 'L') path = computeLinear(curvePoints)
-  else if (curveType === 'P' && curvePoints.length === 3) path = computePerfectCircle(curvePoints) || computeBezier(curvePoints)
+  else if (curveType === 'P' && curvePoints.length === 3)
+    path = computePerfectCircle(curvePoints) || computeBezier(curvePoints)
   else path = computeBezier(curvePoints)
 
   if (length > 0 && path.length > 1) {
     const trimmed = [path[0]]
     let dist = 0
     for (let i = 1; i < path.length; i++) {
-      const dx = path[i].x - path[i - 1].x, dy = path[i].y - path[i - 1].y
+      const dx = path[i].x - path[i - 1].x,
+        dy = path[i].y - path[i - 1].y
       const seg = Math.sqrt(dx * dx + dy * dy)
       if (dist + seg >= length) {
         const t = (length - dist) / seg
@@ -49,7 +51,10 @@ function computeLinear(points) {
     const steps = Math.max(2, Math.ceil(Math.hypot(points[i + 1].x - points[i].x, points[i + 1].y - points[i].y) / 4))
     for (let s = 0; s <= steps; s++) {
       const t = s / steps
-      path.push({ x: points[i].x + (points[i + 1].x - points[i].x) * t, y: points[i].y + (points[i + 1].y - points[i].y) * t })
+      path.push({
+        x: points[i].x + (points[i + 1].x - points[i].x) * t,
+        y: points[i].y + (points[i + 1].y - points[i].y) * t,
+      })
     }
   }
   return path
@@ -78,7 +83,10 @@ function deCasteljau(points, t) {
   if (points.length === 1) return points[0]
   const next = []
   for (let i = 0; i < points.length - 1; i++) {
-    next.push({ x: points[i].x + (points[i + 1].x - points[i].x) * t, y: points[i].y + (points[i + 1].y - points[i].y) * t })
+    next.push({
+      x: points[i].x + (points[i + 1].x - points[i].x) * t,
+      y: points[i].y + (points[i + 1].y - points[i].y) * t,
+    })
   }
   return deCasteljau(next, t)
 }
@@ -87,20 +95,31 @@ function computePerfectCircle(points) {
   const [a, b, c] = points
   const D = 2 * (a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y))
   if (Math.abs(D) < 0.001) return null
-  const cx = ((a.x * a.x + a.y * a.y) * (b.y - c.y) + (b.x * b.x + b.y * b.y) * (c.y - a.y) + (c.x * c.x + c.y * c.y) * (a.y - b.y)) / D
-  const cy = ((a.x * a.x + a.y * a.y) * (c.x - b.x) + (b.x * b.x + b.y * b.y) * (a.x - c.x) + (c.x * c.x + c.y * c.y) * (b.x - a.x)) / D
+  const cx =
+    ((a.x * a.x + a.y * a.y) * (b.y - c.y) +
+      (b.x * b.x + b.y * b.y) * (c.y - a.y) +
+      (c.x * c.x + c.y * c.y) * (a.y - b.y)) /
+    D
+  const cy =
+    ((a.x * a.x + a.y * a.y) * (c.x - b.x) +
+      (b.x * b.x + b.y * b.y) * (a.x - c.x) +
+      (c.x * c.x + c.y * c.y) * (b.x - a.x)) /
+    D
   const r = Math.sqrt((a.x - cx) ** 2 + (a.y - cy) ** 2)
   let startAngle = Math.atan2(a.y - cy, a.x - cx)
   let midAngle = Math.atan2(b.y - cy, b.x - cx)
   let endAngle = Math.atan2(c.y - cy, c.x - cx)
-  let d1 = midAngle - startAngle, d2 = endAngle - midAngle
-  if (d1 < -Math.PI) d1 += 2 * Math.PI; if (d1 > Math.PI) d1 -= 2 * Math.PI
-  if (d2 < -Math.PI) d2 += 2 * Math.PI; if (d2 > Math.PI) d2 -= 2 * Math.PI
+  let d1 = midAngle - startAngle,
+    d2 = endAngle - midAngle
+  if (d1 < -Math.PI) d1 += 2 * Math.PI
+  if (d1 > Math.PI) d1 -= 2 * Math.PI
+  if (d2 < -Math.PI) d2 += 2 * Math.PI
+  if (d2 > Math.PI) d2 -= 2 * Math.PI
   const ccw = d1 > 0
   let totalAngle = endAngle - startAngle
   if (ccw && totalAngle < 0) totalAngle += 2 * Math.PI
   if (!ccw && totalAngle > 0) totalAngle -= 2 * Math.PI
-  const steps = Math.max(40, Math.ceil(Math.abs(totalAngle) * r / 2))
+  const steps = Math.max(40, Math.ceil((Math.abs(totalAngle) * r) / 2))
   const path = []
   for (let i = 0; i <= steps; i++) {
     const angle = startAngle + (i / steps) * totalAngle
@@ -118,16 +137,22 @@ export function precomputeObjects(hitObjects, difficulty, timingPoints) {
   const { preempt } = getAR(ar)
   const radius = getCS(cs)
 
-  let comboIdx = 0, comboNum = 1
+  let comboIdx = 0,
+    comboNum = 1
   const objects = []
 
   for (let i = 0; i < hitObjects.length; i++) {
     const obj = hitObjects[i]
-    if (i === 0 || obj.newCombo) { comboIdx++; comboNum = 1 }
+    if (i === 0 || obj.newCombo) {
+      comboIdx++
+      comboNum = 1
+    }
     const color = COMBO_COLORS[comboIdx % COMBO_COLORS.length]
     const num = comboNum++
 
-    let sliderPath = null, sliderPathLen = 0, sliderDur = 0
+    let sliderPath = null,
+      sliderPathLen = 0,
+      sliderDur = 0
     if (obj.type === 'slider') {
       sliderPath = computeSliderPath(obj.curvePoints, obj.curveType, obj.length)
       // Precompute cumulative distances for fast position lookup
@@ -136,12 +161,19 @@ export function precomputeObjects(hitObjects, difficulty, timingPoints) {
         sliderPathLen += Math.hypot(sliderPath[j].x - sliderPath[j - 1].x, sliderPath[j].y - sliderPath[j - 1].y)
       }
       // Compute slider duration using timing points
-      let beatLength = 500, svMult = 1
+      let beatLength = 500,
+        svMult = 1
       for (let j = timingPoints.length - 1; j >= 0; j--) {
-        if (timingPoints[j].offset <= obj.time && timingPoints[j].uninherited) { beatLength = timingPoints[j].msPerBeat; break }
+        if (timingPoints[j].offset <= obj.time && timingPoints[j].uninherited) {
+          beatLength = timingPoints[j].msPerBeat
+          break
+        }
       }
       for (let j = timingPoints.length - 1; j >= 0; j--) {
-        if (timingPoints[j].offset <= obj.time && !timingPoints[j].uninherited) { svMult = timingPoints[j].svMultiplier ?? 1; break }
+        if (timingPoints[j].offset <= obj.time && !timingPoints[j].uninherited) {
+          svMult = timingPoints[j].svMultiplier ?? 1
+          break
+        }
       }
       sliderDur = (obj.length / (sliderMult * svMult * 100)) * beatLength * obj.slides
     }
@@ -150,10 +182,20 @@ export function precomputeObjects(hitObjects, difficulty, timingPoints) {
     const appearTime = obj.time - preempt
 
     objects.push({
-      x: obj.x, y: obj.y, time: obj.time, type: obj.type,
-      end: obj.end, slides: obj.slides,
-      color, num, sliderPath, sliderPathLen, sliderDur,
-      hitTime, appearTime, fadeOutEnd: hitTime + 200,
+      x: obj.x,
+      y: obj.y,
+      time: obj.time,
+      type: obj.type,
+      end: obj.end,
+      slides: obj.slides,
+      color,
+      num,
+      sliderPath,
+      sliderPathLen,
+      sliderDur,
+      hitTime,
+      appearTime,
+      fadeOutEnd: hitTime + 200,
     })
   }
 
@@ -165,9 +207,11 @@ export function precomputeObjects(hitObjects, difficulty, timingPoints) {
 // Fast position on path using total length
 function posOnPath(path, pathLen, t) {
   if (path.length < 2) return path[0] || { x: 256, y: 192 }
-  let target = t * pathLen, dist = 0
+  let target = t * pathLen,
+    dist = 0
   for (let i = 1; i < path.length; i++) {
-    const dx = path[i].x - path[i - 1].x, dy = path[i].y - path[i - 1].y
+    const dx = path[i].x - path[i - 1].x,
+      dy = path[i].y - path[i - 1].y
     const seg = Math.sqrt(dx * dx + dy * dy)
     if (dist + seg >= target) {
       const frac = seg > 0 ? (target - dist) / seg : 0
@@ -180,7 +224,18 @@ function posOnPath(path, pathLen, t) {
 
 // --- Component ---
 
-function OsuPlayfield({ hitObjects, difficulty, timingPoints = [], currentTimeRef, transparent = false, storyboardAlign = false, widescreen = false, overlayCanvasRef = null, className = '', style = {} }) {
+function OsuPlayfield({
+  hitObjects,
+  difficulty,
+  timingPoints = [],
+  currentTimeRef,
+  transparent = false,
+  storyboardAlign = false,
+  widescreen = false,
+  overlayCanvasRef = null,
+  className = '',
+  style = {},
+}) {
   const canvasRef = useRef(null)
   const containerRef = useRef(null)
   const sizeRef = useRef({ w: 640, h: 480 })
@@ -191,7 +246,10 @@ function OsuPlayfield({ hitObjects, difficulty, timingPoints = [], currentTimeRe
   const radius = getCS(cs)
 
   // Precompute all object data once
-  const objects = useMemo(() => precomputeObjects(hitObjects, difficulty, timingPoints), [hitObjects, difficulty, timingPoints])
+  const objects = useMemo(
+    () => precomputeObjects(hitObjects, difficulty, timingPoints),
+    [hitObjects, difficulty, timingPoints],
+  )
 
   // Resize
   useEffect(() => {
@@ -234,14 +292,21 @@ function OsuPlayfield({ hitObjects, difficulty, timingPoints = [], currentTimeRe
       sliderPath2Ds.set(i, p)
 
       // Compute bounding box for the cached canvas
-      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+      let minX = Infinity,
+        minY = Infinity,
+        maxX = -Infinity,
+        maxY = -Infinity
       for (const pt of obj.sliderPath) {
-        if (pt.x < minX) minX = pt.x; if (pt.y < minY) minY = pt.y
-        if (pt.x > maxX) maxX = pt.x; if (pt.y > maxY) maxY = pt.y
+        if (pt.x < minX) minX = pt.x
+        if (pt.y < minY) minY = pt.y
+        if (pt.x > maxX) maxX = pt.x
+        if (pt.y > maxY) maxY = pt.y
       }
       const pad = radius + 8
-      const bx = minX - pad, by = minY - pad
-      const bw2 = maxX - minX + pad * 2, bh = maxY - minY + pad * 2
+      const bx = minX - pad,
+        by = minY - pad
+      const bw2 = maxX - minX + pad * 2,
+        bh = maxY - minY + pad * 2
       if (bw2 <= 0 || bh <= 0) continue
 
       const sc = document.createElement('canvas')
@@ -296,17 +361,20 @@ function OsuPlayfield({ hitObjects, difficulty, timingPoints = [], currentTimeRe
 
       // In overlay mode, size comes from the parent (StoryboardRenderer sets it on the offscreen canvas)
       // In standalone mode, size comes from the container
-      const w = isOverlayMode ? (offscreen.width || 640) : sizeRef.current.w
-      const h = isOverlayMode ? (offscreen.height || 480) : sizeRef.current.h
-      const dpr = isOverlayMode ? 1 : (window.devicePixelRatio || 1)
+      const w = isOverlayMode ? offscreen.width || 640 : sizeRef.current.w
+      const h = isOverlayMode ? offscreen.height || 480 : sizeRef.current.h
+      const dpr = isOverlayMode ? 1 : window.devicePixelRatio || 1
 
       if (!isOverlayMode) {
         if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
-          canvas.width = w * dpr; canvas.height = h * dpr
-          canvas.style.width = w + 'px'; canvas.style.height = h + 'px'
+          canvas.width = w * dpr
+          canvas.height = h * dpr
+          canvas.style.width = w + 'px'
+          canvas.style.height = h + 'px'
         }
         if (offscreen.width !== canvas.width || offscreen.height !== canvas.height) {
-          offscreen.width = canvas.width; offscreen.height = canvas.height
+          offscreen.width = canvas.width
+          offscreen.height = canvas.height
         }
       }
 
@@ -316,8 +384,10 @@ function OsuPlayfield({ hitObjects, difficulty, timingPoints = [], currentTimeRe
       // Coordinate mapping
       let scale, oX, oY
       if (storyboardAlign) {
-        const SB_W = widescreen ? 854 : 640, SB_H = 480
-        const PF_X = widescreen ? 171 : 64, PF_Y = 48
+        const SB_W = widescreen ? 854 : 640,
+          SB_H = 480
+        const PF_X = widescreen ? 171 : 64,
+          PF_Y = 48
         scale = h / SB_H
         oX = (w - SB_W * scale) / 2 + PF_X * scale
         oY = PF_Y * scale
@@ -347,8 +417,12 @@ function OsuPlayfield({ hitObjects, difficulty, timingPoints = [], currentTimeRe
       // Latest visible: fadeOutEnd >= time
 
       // Find first object where fadeOutEnd >= time (binary search)
-      let lo = 0, hi = objects.length
-      while (lo < hi) { const mid = (lo + hi) >> 1; objects[mid].fadeOutEnd < time ? lo = mid + 1 : hi = mid }
+      let lo = 0,
+        hi = objects.length
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1
+        objects[mid].fadeOutEnd < time ? (lo = mid + 1) : (hi = mid)
+      }
 
       // Collect visible from lo, stop when appearTime > time
       const visible = []
@@ -386,7 +460,18 @@ function OsuPlayfield({ hitObjects, difficulty, timingPoints = [], currentTimeRe
           const path = obj.sliderPath
           if (path && path.length >= 2) {
             // Head circle
-            drawCircleFast(ctx, path[0].x, path[0].y, radius, bw / scale, obj.color, time, obj.time, obj.appearTime, obj.num)
+            drawCircleFast(
+              ctx,
+              path[0].x,
+              path[0].y,
+              radius,
+              bw / scale,
+              obj.color,
+              time,
+              obj.time,
+              obj.appearTime,
+              obj.num,
+            )
             // Slider ball
             if (time >= obj.time && time <= obj.hitTime) {
               const elapsed = time - obj.time
@@ -407,7 +492,9 @@ function OsuPlayfield({ hitObjects, difficulty, timingPoints = [], currentTimeRe
           }
         } else if (obj.type === 'spinner') {
           // Simple spinner in playfield coords
-          const cx = 256, cy = 192, maxR = 150
+          const cx = 256,
+            cy = 192,
+            maxR = 150
           const progress = Math.max(0, Math.min(1, (time - obj.time) / (obj.end - obj.time)))
           ctx.beginPath()
           ctx.arc(cx, cy, maxR * (1 - progress * 0.3), 0, Math.PI * 2)
@@ -428,7 +515,11 @@ function OsuPlayfield({ hitObjects, difficulty, timingPoints = [], currentTimeRe
       // FPS
       fpsData.frames++
       const now = performance.now()
-      if (now - fpsData.lastTime >= 1000) { fpsData.fps = fpsData.frames; fpsData.frames = 0; fpsData.lastTime = now }
+      if (now - fpsData.lastTime >= 1000) {
+        fpsData.fps = fpsData.frames
+        fpsData.frames = 0
+        fpsData.lastTime = now
+      }
       ctx.font = '11px monospace'
       ctx.fillStyle = 'rgba(0,0,0,0.5)'
       ctx.fillRect(4, 4, 52, 18)
@@ -458,7 +549,11 @@ function OsuPlayfield({ hitObjects, difficulty, timingPoints = [], currentTimeRe
   if (!objects.length) return null
 
   return (
-    <div ref={containerRef} className={className} style={{ width: '100%', height: '100%', position: 'relative', ...style }}>
+    <div
+      ref={containerRef}
+      className={className}
+      style={{ width: '100%', height: '100%', position: 'relative', ...style }}
+    >
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
     </div>
   )

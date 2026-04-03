@@ -36,16 +36,17 @@ export default function MenuBar({ menus = [], className = '' }) {
                     key={j}
                     type="button"
                     className={`w-full text-left px-2.5 py-[3px] text-[11px] cursor-default flex justify-between items-center ${
-                      item.disabled
-                        ? 'text-[#666666] pointer-events-none'
-                        : 'text-[#cccccc] hover:bg-[#404040]'
+                      item.disabled ? 'text-[#666666] pointer-events-none' : 'text-[#cccccc] hover:bg-[#404040]'
                     }`}
-                    onClick={() => { item.action?.(); setOpenIndex(null) }}
+                    onClick={() => {
+                      item.action?.()
+                      setOpenIndex(null)
+                    }}
                   >
                     <span>{item.label}</span>
                     {item.shortcut && <span className="text-[#666666] text-[10px]">{item.shortcut}</span>}
                   </button>
-                )
+                ),
               )}
             </div>
           )}

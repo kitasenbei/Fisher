@@ -1,6 +1,15 @@
 import { useRef, useState } from 'react'
 
-export default function Slider({ label, id, min = 0, max = 100, step = 1, value: controlledValue, onChange, className = '' }) {
+export default function Slider({
+  label,
+  id,
+  min = 0,
+  max = 100,
+  step = 1,
+  value: controlledValue,
+  onChange,
+  className = '',
+}) {
   const isControlled = controlledValue !== undefined && onChange !== undefined
   const [internal, setInternal] = useState(controlledValue ?? 0)
   const value = isControlled ? controlledValue : internal
@@ -30,7 +39,9 @@ export default function Slider({ label, id, min = 0, max = 100, step = 1, value:
 
     update(e.clientX)
 
-    function onMove(ev) { update(ev.clientX) }
+    function onMove(ev) {
+      update(ev.clientX)
+    }
     function onUp() {
       document.removeEventListener('mousemove', onMove)
       document.removeEventListener('mouseup', onUp)
@@ -41,7 +52,11 @@ export default function Slider({ label, id, min = 0, max = 100, step = 1, value:
 
   return (
     <div className={`space-y-1 ${className}`}>
-      {label && <label htmlFor={id} className="block text-[11px] text-[#999999]">{label}</label>}
+      {label && (
+        <label htmlFor={id} className="block text-[11px] text-[#999999]">
+          {label}
+        </label>
+      )}
       <div
         ref={trackRef}
         className="relative h-[18px] bg-[#2b2b2b] border border-[#3b3b3b] rounded-[3px] cursor-ew-resize select-none overflow-hidden"
@@ -54,10 +69,7 @@ export default function Slider({ label, id, min = 0, max = 100, step = 1, value:
         }}
       >
         {/* Fill */}
-        <div
-          className="absolute inset-y-0 left-0 bg-[#2d8ceb]/20"
-          style={{ width: `${pct}%` }}
-        >
+        <div className="absolute inset-y-0 left-0 bg-[#2d8ceb]/20" style={{ width: `${pct}%` }}>
           <div className="absolute right-0 top-0 bottom-0 w-px bg-[#2d8ceb]/60" />
         </div>
         {/* Value text */}

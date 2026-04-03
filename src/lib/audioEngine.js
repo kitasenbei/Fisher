@@ -59,7 +59,9 @@ export default class AudioEngine {
 
   stop() {
     if (this.source) {
-      try { this.source.stop() } catch {}
+      try {
+        this.source.stop()
+      } catch {}
       this.source.disconnect()
       this.source = null
     }

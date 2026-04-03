@@ -1,6 +1,13 @@
 import { useState } from 'react'
 
-export default function IconToggle({ icon, activeIcon, checked: controlledChecked, onChange, tooltip, className = '' }) {
+export default function IconToggle({
+  icon,
+  activeIcon,
+  checked: controlledChecked,
+  onChange,
+  tooltip,
+  className = '',
+}) {
   const isControlled = controlledChecked !== undefined && onChange !== undefined
   const [internal, setInternal] = useState(controlledChecked ?? false)
   const checked = isControlled ? controlledChecked : internal

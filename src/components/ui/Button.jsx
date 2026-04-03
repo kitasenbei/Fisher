@@ -1,10 +1,7 @@
 const variants = {
-  primary:
-    'bg-[#2d8ceb] text-white border-[#1a6fbf] hover:bg-[#3a96f0] active:bg-[#2478cc]',
-  secondary:
-    'bg-[#535353] text-[#cccccc] border-[#3b3b3b] hover:bg-[#5a5a5a] active:bg-[#484848]',
-  ghost:
-    'bg-transparent text-[#cccccc] border-transparent hover:bg-[#4a4a4a] active:bg-[#404040]',
+  primary: 'bg-[#2d8ceb] text-white border-[#1a6fbf] hover:bg-[#3a96f0] active:bg-[#2478cc]',
+  secondary: 'bg-[#535353] text-[#cccccc] border-[#3b3b3b] hover:bg-[#5a5a5a] active:bg-[#484848]',
+  ghost: 'bg-transparent text-[#cccccc] border-transparent hover:bg-[#4a4a4a] active:bg-[#404040]',
 }
 
 const sizes = {

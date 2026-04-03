@@ -38,11 +38,7 @@ export default function TimingPointList() {
   const visiblePoints = timingPoints.slice(startIdx, endIdx)
 
   return (
-    <div
-      ref={containerRef}
-      className="flex-1 overflow-y-auto"
-      onScroll={handleScroll}
-    >
+    <div ref={containerRef} className="flex-1 overflow-y-auto" onScroll={handleScroll}>
       {/* Header */}
       <div className="sticky top-0 z-10 flex items-center px-2 h-[18px] text-[9px] text-[#666666] border-b border-[#3b3b3b] bg-[#2b2b2b]">
         <span className="w-14 shrink-0">Time</span>
@@ -69,11 +65,17 @@ export default function TimingPointList() {
                 }}
               >
                 <span className="w-14 shrink-0 font-mono text-[9px]">{formatTime(tp.offset)}</span>
-                <span className={`w-8 shrink-0 text-center text-[9px] ${
-                  tp.uninherited
-                    ? (isSelected ? 'text-white' : 'text-[#cc8833]')
-                    : (isSelected ? 'text-white' : 'text-[#2d8ceb]')
-                }`}>
+                <span
+                  className={`w-8 shrink-0 text-center text-[9px] ${
+                    tp.uninherited
+                      ? isSelected
+                        ? 'text-white'
+                        : 'text-[#cc8833]'
+                      : isSelected
+                        ? 'text-white'
+                        : 'text-[#2d8ceb]'
+                  }`}
+                >
                   {tp.uninherited ? 'BPM' : 'SV'}
                 </span>
                 <span className="flex-1 text-right font-mono text-[9px]">
@@ -85,9 +87,7 @@ export default function TimingPointList() {
           })}
         </div>
       </div>
-      {timingPoints.length === 0 && (
-        <div className="text-[10px] text-[#666666] text-center py-4">No timing points</div>
-      )}
+      {timingPoints.length === 0 && <div className="text-[10px] text-[#666666] text-center py-4">No timing points</div>}
     </div>
   )
 }

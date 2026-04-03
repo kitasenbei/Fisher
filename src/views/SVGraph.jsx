@@ -36,17 +36,24 @@ export default function SVGraph() {
   const hoveredRef = useRef(hoveredPoint)
   hoveredRef.current = hoveredPoint
 
-  const svPoints = useMemo(() => state.timingPoints.filter(tp => !tp.uninherited), [state.timingPoints])
-  const bpmPoints = useMemo(() => state.timingPoints.filter(tp => tp.uninherited), [state.timingPoints])
+  const svPoints = useMemo(() => state.timingPoints.filter((tp) => !tp.uninherited), [state.timingPoints])
+  const bpmPoints = useMemo(() => state.timingPoints.filter((tp) => tp.uninherited), [state.timingPoints])
   const svPointsRef = useRef(svPoints)
   svPointsRef.current = svPoints
   const bpmPointsRef = useRef(bpmPoints)
   bpmPointsRef.current = bpmPoints
 
   // Mark dirty on state changes
-  useEffect(() => { needsDrawRef.current = true }, [
-    state.timingPoints, state.viewport, state.selection, state.activeTool,
-    state.playback.currentTimeMs, state.display, hoveredPoint,
+  useEffect(() => {
+    needsDrawRef.current = true
+  }, [
+    state.timingPoints,
+    state.viewport,
+    state.selection,
+    state.activeTool,
+    state.playback.currentTimeMs,
+    state.display,
+    hoveredPoint,
   ])
 
   useEffect(() => {
@@ -161,7 +168,10 @@ export default function SVGraph() {
         const isWhole = Math.abs(v - Math.round(v)) < 0.01
         ctx.strokeStyle = isWhole ? COLORS.gridMajor : COLORS.grid
         ctx.lineWidth = isWhole ? 1 : 0.5
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke()
+        ctx.beginPath()
+        ctx.moveTo(0, y)
+        ctx.lineTo(w, y)
+        ctx.stroke()
         const label = isWhole ? `${Math.round(v)}x` : `${v.toFixed(1)}x`
         const bg = isWhole ? '#3d4a5c' : '#3a3a42'
         chip(label, 4, y, isWhole ? '#c8d8ec' : '#8888a0', bg, 'left', 'tag')
@@ -170,74 +180,85 @@ export default function SVGraph() {
 
     // Beat grid from BPM points — progressively collapse detail by zoom
     const timeRange = vp.endMs - vp.startMs
-    if (!d.beatGrid) { /* skip grid */ } else {
-    const snapDiv = s.snapEnabled ? s.snapDivisor : 1
+    if (!d.beatGrid) {
+      /* skip grid */
+    } else {
+      const snapDiv = s.snapEnabled ? s.snapDivisor : 1
 
-    for (const b of bpm) {
-      const beatInterval = b.msPerBeat
-      if (beatInterval <= 0) continue
-      const measureInterval = beatInterval * b.meter
+      for (const b of bpm) {
+        const beatInterval = b.msPerBeat
+        if (beatInterval <= 0) continue
+        const measureInterval = beatInterval * b.meter
 
-      // Pick the finest interval that keeps lines >= 50px apart
-      const snapInterval = beatInterval / snapDiv
-      const intervals = [
-        { ms: snapInterval, type: 'sub' },
-        { ms: beatInterval, type: 'beat' },
-        { ms: measureInterval, type: 'measure' },
-      ]
+        // Pick the finest interval that keeps lines >= 50px apart
+        const snapInterval = beatInterval / snapDiv
+        const intervals = [
+          { ms: snapInterval, type: 'sub' },
+          { ms: beatInterval, type: 'beat' },
+          { ms: measureInterval, type: 'measure' },
+        ]
 
-      let chosenInterval = null
-      for (const iv of intervals) {
-        const pxPer = (iv.ms / timeRange) * w
-        if (pxPer >= 50) { chosenInterval = iv; break }
-      }
-
-      // If even measures are too dense, skip this BPM section
-      if (!chosenInterval) {
-        const pxPerMeasure = (measureInterval / timeRange) * w
-        if (pxPerMeasure >= 15) chosenInterval = { ms: measureInterval, type: 'measure' }
-        else continue
-      }
-
-      const iter = chosenInterval.ms
-      const startMs = Math.max(b.offset, vp.startMs)
-      const maxLines = Math.ceil(w / 8) // hard cap
-      let count = 0
-
-      for (let ms = startMs - ((startMs - b.offset) % iter); ms <= vp.endMs && count < maxLines; ms += iter) {
-        const x = toX(ms)
-        if (x < 0) continue
-        if (x > w) break
-        count++
-
-        const beatOffset = ms - b.offset
-        const isMeasure = Math.abs(beatOffset % measureInterval) < 0.5
-        const isBeat = Math.abs(beatOffset % beatInterval) < 0.5
-
-        if (isMeasure) {
-          ctx.strokeStyle = '#606060'
-          ctx.lineWidth = 1.2
-        } else if (isBeat) {
-          ctx.strokeStyle = '#505050'
-          ctx.lineWidth = 0.8
-        } else {
-          ctx.strokeStyle = '#424242'
-          ctx.lineWidth = 0.5
+        let chosenInterval = null
+        for (const iv of intervals) {
+          const pxPer = (iv.ms / timeRange) * w
+          if (pxPer >= 50) {
+            chosenInterval = iv
+            break
+          }
         }
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke()
-      }
 
-      // BPM label
-      const bx = toX(b.offset)
-      if (bx >= 0 && bx <= w) {
-        ctx.strokeStyle = COLORS.bpmText
-        ctx.lineWidth = 1
-        ctx.setLineDash([4, 4])
-        ctx.beginPath(); ctx.moveTo(bx, 0); ctx.lineTo(bx, h); ctx.stroke()
-        ctx.setLineDash([])
-        chip(`${b.bpm.toFixed(0)} BPM`, bx + 3, 12, COLORS.bpmText, '#2b2520', 'left')
+        // If even measures are too dense, skip this BPM section
+        if (!chosenInterval) {
+          const pxPerMeasure = (measureInterval / timeRange) * w
+          if (pxPerMeasure >= 15) chosenInterval = { ms: measureInterval, type: 'measure' }
+          else continue
+        }
+
+        const iter = chosenInterval.ms
+        const startMs = Math.max(b.offset, vp.startMs)
+        const maxLines = Math.ceil(w / 8) // hard cap
+        let count = 0
+
+        for (let ms = startMs - ((startMs - b.offset) % iter); ms <= vp.endMs && count < maxLines; ms += iter) {
+          const x = toX(ms)
+          if (x < 0) continue
+          if (x > w) break
+          count++
+
+          const beatOffset = ms - b.offset
+          const isMeasure = Math.abs(beatOffset % measureInterval) < 0.5
+          const isBeat = Math.abs(beatOffset % beatInterval) < 0.5
+
+          if (isMeasure) {
+            ctx.strokeStyle = '#606060'
+            ctx.lineWidth = 1.2
+          } else if (isBeat) {
+            ctx.strokeStyle = '#505050'
+            ctx.lineWidth = 0.8
+          } else {
+            ctx.strokeStyle = '#424242'
+            ctx.lineWidth = 0.5
+          }
+          ctx.beginPath()
+          ctx.moveTo(x, 0)
+          ctx.lineTo(x, h)
+          ctx.stroke()
+        }
+
+        // BPM label
+        const bx = toX(b.offset)
+        if (bx >= 0 && bx <= w) {
+          ctx.strokeStyle = COLORS.bpmText
+          ctx.lineWidth = 1
+          ctx.setLineDash([4, 4])
+          ctx.beginPath()
+          ctx.moveTo(bx, 0)
+          ctx.lineTo(bx, h)
+          ctx.stroke()
+          ctx.setLineDash([])
+          chip(`${b.bpm.toFixed(0)} BPM`, bx + 3, 12, COLORS.bpmText, '#2b2520', 'left')
+        }
       }
-    }
     } // end beatGrid check
 
     // SV step line + fill
@@ -289,12 +310,16 @@ export default function SVGraph() {
         for (let i = 0; i < sv.length; i++) {
           const px = toX(sv[i].offset)
           const py = toY(sv[i].svMultiplier)
-          if (px > w + 10 && fStarted) { ctx.lineTo(px, fLastY); break }
+          if (px > w + 10 && fStarted) {
+            ctx.lineTo(px, fLastY)
+            break
+          }
           if (!fStarted) {
             if (i === 0 || px >= -10) {
               ctx.moveTo(Math.max(-10, px), h)
               ctx.lineTo(Math.max(-10, px), py)
-              fStarted = true; fLastY = py
+              fStarted = true
+              fLastY = py
             }
             continue
           }
@@ -313,42 +338,47 @@ export default function SVGraph() {
     }
 
     // SV points (diamonds) — only visible ones
-    if (!d.svPoints) { /* skip */ } else
-    for (let i = 0; i < sv.length; i++) {
-      const point = sv[i]
-      const x = toX(point.offset)
-      if (x < -10) continue
-      if (x > w + 10) break
-      const y = toY(point.svMultiplier)
-      const globalIdx = tp.indexOf(point)
-      const isSelected = sel.has(globalIdx)
-      const isHovered = hovered === globalIdx
-      const size = isHovered ? 5 : 4
+    if (!d.svPoints) {
+      /* skip */
+    } else
+      for (let i = 0; i < sv.length; i++) {
+        const point = sv[i]
+        const x = toX(point.offset)
+        if (x < -10) continue
+        if (x > w + 10) break
+        const y = toY(point.svMultiplier)
+        const globalIdx = tp.indexOf(point)
+        const isSelected = sel.has(globalIdx)
+        const isHovered = hovered === globalIdx
+        const size = isHovered ? 5 : 4
 
-      ctx.save()
-      ctx.translate(x, y)
-      ctx.rotate(Math.PI / 4)
-      ctx.fillStyle = isSelected ? COLORS.svPointSelected : COLORS.svPoint
-      ctx.fillRect(-size / 2, -size / 2, size, size)
-      if (isSelected) {
-        ctx.strokeStyle = COLORS.svLine
-        ctx.lineWidth = 1.5
-        ctx.strokeRect(-size / 2, -size / 2, size, size)
-      }
-      ctx.restore()
+        ctx.save()
+        ctx.translate(x, y)
+        ctx.rotate(Math.PI / 4)
+        ctx.fillStyle = isSelected ? COLORS.svPointSelected : COLORS.svPoint
+        ctx.fillRect(-size / 2, -size / 2, size, size)
+        if (isSelected) {
+          ctx.strokeStyle = COLORS.svLine
+          ctx.lineWidth = 1.5
+          ctx.strokeRect(-size / 2, -size / 2, size, size)
+        }
+        ctx.restore()
 
-      if ((isHovered || isSelected) && d.hoverLabels) {
-        chip(`${point.svMultiplier.toFixed(2)}x`, x, y - 10, '#cccccc', 'rgba(45,140,235,0.25)')
-        chip(`${Math.round(point.offset)}ms`, x, y + 14, '#999999')
+        if ((isHovered || isSelected) && d.hoverLabels) {
+          chip(`${point.svMultiplier.toFixed(2)}x`, x, y - 10, '#cccccc', 'rgba(45,140,235,0.25)')
+          chip(`${Math.round(point.offset)}ms`, x, y + 14, '#999999')
+        }
       }
-    }
 
     // Playhead
     const px = toX(playMs)
     if (d.playhead && px >= 0 && px <= w) {
       ctx.strokeStyle = COLORS.playhead
       ctx.lineWidth = 1.5
-      ctx.beginPath(); ctx.moveTo(px, 0); ctx.lineTo(px, h); ctx.stroke()
+      ctx.beginPath()
+      ctx.moveTo(px, 0)
+      ctx.lineTo(px, h)
+      ctx.stroke()
       const sec = playMs / 1000
       const min = Math.floor(sec / 60)
       const sStr = (sec % 60).toFixed(1)
@@ -373,7 +403,13 @@ export default function SVGraph() {
       ctx.setLineDash([])
       const msRange = Math.abs(fromX(mx) - fromX(za.startX))
       const svRangeArea = Math.abs(fromY(my) - fromY(za.startY))
-      chip(`${(msRange / 1000).toFixed(1)}s × ${svRangeArea.toFixed(2)}x`, rx + rw / 2, ry + rh / 2, '#2d8ceb', 'rgba(20,40,60,0.9)')
+      chip(
+        `${(msRange / 1000).toFixed(1)}s × ${svRangeArea.toFixed(2)}x`,
+        rx + rw / 2,
+        ry + rh / 2,
+        '#2d8ceb',
+        'rgba(20,40,60,0.9)',
+      )
     }
 
     // Flush all chips on top of everything
@@ -396,7 +432,10 @@ export default function SVGraph() {
       animRef.current = requestAnimationFrame(tick)
     }
     animRef.current = requestAnimationFrame(tick)
-    return () => { running = false; cancelAnimationFrame(animRef.current) }
+    return () => {
+      running = false
+      cancelAnimationFrame(animRef.current)
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // --- Mouse interactions ---
@@ -411,8 +450,14 @@ export default function SVGraph() {
     const logSafe = (v) => Math.log2(Math.max(v, 0.001))
     const lMin = log ? logSafe(vp.svMin) : vp.svMin
     const lMax = log ? logSafe(vp.svMax) : vp.svMax
-    const toY = (v, h) => { const m = log ? logSafe(v) : v; return h - ((m - lMin) / (lMax - lMin)) * h }
-    const fromY = (y, h) => { const lin = lMax - (y / h) * (lMax - lMin); return log ? Math.pow(2, lin) : lin }
+    const toY = (v, h) => {
+      const m = log ? logSafe(v) : v
+      return h - ((m - lMin) / (lMax - lMin)) * h
+    }
+    const fromY = (y, h) => {
+      const lin = lMax - (y / h) * (lMax - lMin)
+      return log ? Math.pow(2, lin) : lin
+    }
     return { toY, fromY }
   }
 
@@ -439,8 +484,15 @@ export default function SVGraph() {
     const sv = Math.max(0.1, fromYl(y, h))
     if (s.snapEnabled) ms = snapToBeat(ms, s.timingPoints, s.snapDivisor)
     dispatch('ADD_POINT', {
-      offset: ms, svMultiplier: parseFloat(sv.toFixed(2)), msPerBeat: -100 / sv,
-      meter: 4, sampleSet: 0, sampleIndex: 0, volume: 100, uninherited: false, effects: 0,
+      offset: ms,
+      svMultiplier: parseFloat(sv.toFixed(2)),
+      msPerBeat: -100 / sv,
+      meter: 4,
+      sampleSet: 0,
+      sampleIndex: 0,
+      volume: 100,
+      uninherited: false,
+      effects: 0,
     })
   }
 
@@ -471,9 +523,17 @@ export default function SVGraph() {
         }
         break
       }
-      case 'pen': addPointAt(x, y, w, h); break
-      case 'eraser': { if (idx >= 0) dispatch('REMOVE_POINTS', new Set([idx])); break }
-      case 'pan': { panRef.current = { startX: e.clientX, startY: e.clientY, startViewport: { ...vp } }; break }
+      case 'pen':
+        addPointAt(x, y, w, h)
+        break
+      case 'eraser': {
+        if (idx >= 0) dispatch('REMOVE_POINTS', new Set([idx]))
+        break
+      }
+      case 'pan': {
+        panRef.current = { startX: e.clientX, startY: e.clientY, startViewport: { ...vp } }
+        break
+      }
       case 'zoom': {
         const factor = e.altKey ? 1.5 : 0.67
         const range = vp.endMs - vp.startMs
@@ -483,7 +543,10 @@ export default function SVGraph() {
         dispatch('SET_VIEWPORT', { startMs: mouseMs - ratio * newRange, endMs: mouseMs + (1 - ratio) * newRange })
         break
       }
-      case 'zoom-area': { zoomAreaRef.current = { startX: x, startY: y }; break }
+      case 'zoom-area': {
+        zoomAreaRef.current = { startX: x, startY: y }
+        break
+      }
       case 'seek': {
         const ms = vp.startMs + (x / w) * (vp.endMs - vp.startMs)
         const clampedMs = Math.max(0, ms)
@@ -501,10 +564,11 @@ export default function SVGraph() {
       case 'fit': {
         const tp = s.timingPoints
         if (tp.length > 0) {
-          const allMs = tp.map(p => p.offset)
-          const allSv = svPointsRef.current.map(p => p.svMultiplier)
+          const allMs = tp.map((p) => p.offset)
+          const allSv = svPointsRef.current.map((p) => p.svMultiplier)
           dispatch('SET_VIEWPORT', {
-            startMs: Math.min(...allMs) - 500, endMs: Math.max(...allMs) + 500,
+            startMs: Math.min(...allMs) - 500,
+            endMs: Math.max(...allMs) + 500,
             svMin: Math.max(0, (allSv.length ? Math.min(...allSv) : 0) - 0.5),
             svMax: (allSv.length ? Math.max(...allSv) : 4) + 0.5,
           })
@@ -549,8 +613,10 @@ export default function SVGraph() {
         const msPerPx = (sv.endMs - sv.startMs) / w
         const svPerPx = (sv.svMax - sv.svMin) / h
         dispatch('SET_VIEWPORT', {
-          startMs: sv.startMs - dx * msPerPx, endMs: sv.endMs - dx * msPerPx,
-          svMin: sv.svMin + dy * svPerPx, svMax: sv.svMax + dy * svPerPx,
+          startMs: sv.startMs - dx * msPerPx,
+          endMs: sv.endMs - dx * msPerPx,
+          svMin: sv.svMin + dy * svPerPx,
+          svMax: sv.svMax + dy * svPerPx,
         })
       }
       return
@@ -609,8 +675,10 @@ export default function SVGraph() {
       const vp = stateRef.current.viewport
       const fromXl = (px) => vp.startMs + (px / w) * (vp.endMs - vp.startMs)
       const { fromY: fromYl } = makeYTransforms(vp, stateRef.current.display)
-      const sx = Math.min(za.startX, x), ex = Math.max(za.startX, x)
-      const sy = Math.min(za.startY, y), ey = Math.max(za.startY, y)
+      const sx = Math.min(za.startX, x),
+        ex = Math.max(za.startX, x)
+      const sy = Math.min(za.startY, y),
+        ey = Math.max(za.startY, y)
       if (ex - sx > 5 && ey - sy > 5) {
         dispatch('SET_VIEWPORT', { startMs: fromXl(sx), endMs: fromXl(ex), svMin: fromYl(ey, h), svMax: fromYl(sy, h) })
       }
@@ -641,9 +709,14 @@ export default function SVGraph() {
   }, [dispatch])
 
   const cursorMap = {
-    select: 'cursor-default', pen: 'cursor-crosshair', eraser: 'cursor-pointer',
-    pan: 'cursor-grab', zoom: 'cursor-zoom-in', 'zoom-area': 'cursor-crosshair',
-    seek: 'cursor-col-resize', fit: 'cursor-pointer',
+    select: 'cursor-default',
+    pen: 'cursor-crosshair',
+    eraser: 'cursor-pointer',
+    pan: 'cursor-grab',
+    zoom: 'cursor-zoom-in',
+    'zoom-area': 'cursor-crosshair',
+    seek: 'cursor-col-resize',
+    fit: 'cursor-pointer',
   }
 
   return (
@@ -653,7 +726,12 @@ export default function SVGraph() {
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onMouseLeave={() => { setHoveredPoint(-1); draggingRef.current = null; panRef.current = null; zoomAreaRef.current = null }}
+      onMouseLeave={() => {
+        setHoveredPoint(-1)
+        draggingRef.current = null
+        panRef.current = null
+        zoomAreaRef.current = null
+      }}
       onContextMenu={(e) => e.preventDefault()}
     />
   )

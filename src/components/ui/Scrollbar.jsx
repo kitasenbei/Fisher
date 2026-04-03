@@ -14,7 +14,11 @@ export default function Scrollbar({ children, className = '', maxHeight = 200 })
   }
 
   // Firefox / others get the custom scrollbar
-  return <CustomScrollbar className={className} maxHeight={maxHeight}>{children}</CustomScrollbar>
+  return (
+    <CustomScrollbar className={className} maxHeight={maxHeight}>
+      {children}
+    </CustomScrollbar>
+  )
 }
 
 function CustomScrollbar({ children, className, maxHeight }) {
@@ -118,31 +122,21 @@ function CustomScrollbar({ children, className, maxHeight }) {
       onMouseLeave={stopRepeat}
     >
       <svg className="h-[6px] w-[6px] text-[#999999]" viewBox="0 0 6 6" fill="currentColor">
-        {direction === 'up'
-          ? <path d="M3 1L0.5 4.5h5L3 1z" />
-          : <path d="M3 5L0.5 1.5h5L3 5z" />}
+        {direction === 'up' ? <path d="M3 1L0.5 4.5h5L3 1z" /> : <path d="M3 5L0.5 1.5h5L3 5z" />}
       </svg>
     </button>
   )
 
   return (
     <div className={`relative flex ${className}`}>
-      <div
-        ref={contentRef}
-        className="flex-1 overflow-hidden"
-        style={{ maxHeight }}
-      >
+      <div ref={contentRef} className="flex-1 overflow-hidden" style={{ maxHeight }}>
         {children}
       </div>
 
       {visible && (
         <div className="flex flex-col w-[14px] bg-[#3b3b3b] shrink-0">
           {arrow('up')}
-          <div
-            ref={trackRef}
-            className="flex-1 relative cursor-default"
-            onClick={onTrackClick}
-          >
+          <div ref={trackRef} className="flex-1 relative cursor-default" onClick={onTrackClick}>
             <div
               ref={thumbRef}
               className="absolute left-[3px] right-[3px] rounded-full bg-[#666666] hover:bg-[#777777] cursor-default"

@@ -1,6 +1,16 @@
 import { useState, useRef } from 'react'
 
-export default function NumberInput({ label, id, value: controlledValue, min, max, step = 1, onChange, className = '', ...props }) {
+export default function NumberInput({
+  label,
+  id,
+  value: controlledValue,
+  min,
+  max,
+  step = 1,
+  onChange,
+  className = '',
+  ...props
+}) {
   const isControlled = controlledValue !== undefined && onChange !== undefined
   const [internal, setInternal] = useState(controlledValue ?? 0)
   const value = isControlled ? controlledValue : internal
@@ -46,7 +56,11 @@ export default function NumberInput({ label, id, value: controlledValue, min, ma
 
   return (
     <div className={`space-y-1 ${className}`}>
-      {label && <label htmlFor={id} className="block text-[11px] text-[#999999]">{label}</label>}
+      {label && (
+        <label htmlFor={id} className="block text-[11px] text-[#999999]">
+          {label}
+        </label>
+      )}
       <div className="relative">
         <input
           id={id}

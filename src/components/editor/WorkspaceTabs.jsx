@@ -20,9 +20,7 @@ export default function WorkspaceTabs({ tabs = [], value: controlledValue, onCha
         <button
           key={tab.value}
           className={`px-3 h-5 text-[11px] rounded-t-[3px] cursor-default transition-colors ${
-            active === tab.value
-              ? 'bg-[#3c3c3c] text-[#ffffff]'
-              : 'text-[#999999] hover:text-[#cccccc]'
+            active === tab.value ? 'bg-[#3c3c3c] text-[#ffffff]' : 'text-[#999999] hover:text-[#cccccc]'
           }`}
           onClick={() => handleClick(tab)}
         >

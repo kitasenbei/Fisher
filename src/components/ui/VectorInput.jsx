@@ -79,7 +79,14 @@ function AxisField({ axis, value, step, onChange }) {
   )
 }
 
-export default function VectorInput({ label, value: controlledValue = {}, axes = ['x', 'y', 'z'], step = 0.1, onChange, className = '' }) {
+export default function VectorInput({
+  label,
+  value: controlledValue = {},
+  axes = ['x', 'y', 'z'],
+  step = 0.1,
+  onChange,
+  className = '',
+}) {
   const isControlled = onChange !== undefined
   const [internal, setInternal] = useState(controlledValue)
   const value = isControlled ? controlledValue : internal

@@ -1,5 +1,16 @@
 const LAYER_MAP = { Background: 0, Fail: 1, Pass: 2, Foreground: 3, Overlay: 4 }
-const ORIGIN_MAP = { TopLeft: 0, Centre: 1, CentreLeft: 2, TopRight: 3, BottomCentre: 4, TopCentre: 5, Custom: 6, CentreRight: 7, BottomLeft: 8, BottomRight: 9 }
+const ORIGIN_MAP = {
+  TopLeft: 0,
+  Centre: 1,
+  CentreLeft: 2,
+  TopRight: 3,
+  BottomCentre: 4,
+  TopCentre: 5,
+  Custom: 6,
+  CentreRight: 7,
+  BottomLeft: 8,
+  BottomRight: 9,
+}
 
 /**
  * Parse storyboard from raw .osu/.osb lines.
@@ -17,7 +28,10 @@ export function parseStoryboard(lines, widescreen = false) {
   for (const line of lines) {
     const stripped = line.trim()
 
-    if (stripped === '[Events]') { inEvents = true; continue }
+    if (stripped === '[Events]') {
+      inEvents = true
+      continue
+    }
     if (stripped.startsWith('[') && stripped.endsWith(']')) {
       if (inEvents) break
       continue
@@ -48,7 +62,16 @@ export function parseStoryboard(lines, widescreen = false) {
         const startTime = parseInt(parts[1])
         const loopCount = parseInt(parts[2])
         if (!isNaN(startTime) && !isNaN(loopCount)) {
-          loopCommand = { sprite_id: currentSpriteId, type: 'L', easing: 0, start_time: startTime, end_time: startTime, params: [], loop_count: loopCount, sub_commands: [] }
+          loopCommand = {
+            sprite_id: currentSpriteId,
+            type: 'L',
+            easing: 0,
+            start_time: startTime,
+            end_time: startTime,
+            params: [],
+            loop_count: loopCount,
+            sub_commands: [],
+          }
           inLoop = true
         }
       } else if (cmdType === 'T' && parts.length >= 4) {
@@ -56,7 +79,17 @@ export function parseStoryboard(lines, widescreen = false) {
         const startTime = parseInt(parts[2])
         const endTime = parts.length > 3 ? parseInt(parts[3]) : startTime
         if (!isNaN(startTime)) {
-          loopCommand = { sprite_id: currentSpriteId, type: 'T', easing: 0, start_time: startTime, end_time: endTime || startTime, params: [], loop_count: null, sub_commands: [], trigger_name: triggerName }
+          loopCommand = {
+            sprite_id: currentSpriteId,
+            type: 'T',
+            easing: 0,
+            start_time: startTime,
+            end_time: endTime || startTime,
+            params: [],
+            loop_count: null,
+            sub_commands: [],
+            trigger_name: triggerName,
+          }
           inLoop = true
         }
       } else if ('F M MX MY S V R C P'.split(' ').includes(cmdType)) {
@@ -69,16 +102,32 @@ export function parseStoryboard(lines, widescreen = false) {
         for (let i = 4; i < parts.length; i++) {
           if (!parts[i]) continue
           if (cmdType === 'P') params.push(parts[i])
-          else { const n = parseFloat(parts[i]); if (!isNaN(n)) params.push(n) }
+          else {
+            const n = parseFloat(parts[i])
+            if (!isNaN(n)) params.push(n)
+          }
         }
 
-        const command = { sprite_id: currentSpriteId, type: cmdType, easing, start_time: startTime, end_time: endTime, params, loop_count: null, sub_commands: null }
+        const command = {
+          sprite_id: currentSpriteId,
+          type: cmdType,
+          easing,
+          start_time: startTime,
+          end_time: endTime,
+          params,
+          loop_count: null,
+          sub_commands: null,
+        }
 
         if (inLoop && loopCommand?.sub_commands) loopCommand.sub_commands.push(command)
         else commands.push(command)
       }
     } else {
-      if (inLoop && loopCommand) { commands.push(loopCommand); inLoop = false; loopCommand = null }
+      if (inLoop && loopCommand) {
+        commands.push(loopCommand)
+        inLoop = false
+        loopCommand = null
+      }
 
       const parts = stripped.split(',')
       const objType = parts[0]
@@ -87,7 +136,18 @@ export function parseStoryboard(lines, widescreen = false) {
         const filepath = parts[3].replace(/"/g, '')
         const layer = LAYER_MAP[parts[1]] ?? (parseInt(parts[1]) || 0)
         const origin = ORIGIN_MAP[parts[2]] ?? (parseInt(parts[2]) || 1)
-        sprites.push({ id: spriteIdCounter, type: 'sprite', layer, origin, filepath, x: parseFloat(parts[4]), y: parseFloat(parts[5]), frame_count: null, frame_delay: null, loop_type: null })
+        sprites.push({
+          id: spriteIdCounter,
+          type: 'sprite',
+          layer,
+          origin,
+          filepath,
+          x: parseFloat(parts[4]),
+          y: parseFloat(parts[5]),
+          frame_count: null,
+          frame_delay: null,
+          loop_type: null,
+        })
         currentSpriteId = spriteIdCounter++
         if (!images.includes(filepath)) images.push(filepath)
       } else if (objType === 'Animation' && parts.length >= 9) {
@@ -97,7 +157,18 @@ export function parseStoryboard(lines, widescreen = false) {
         const frameCount = parseInt(parts[6])
         const frameDelay = parseFloat(parts[7])
         const loopType = parts[8] || 'LoopForever'
-        sprites.push({ id: spriteIdCounter, type: 'animation', layer, origin, filepath, x: parseFloat(parts[4]), y: parseFloat(parts[5]), frame_count: frameCount, frame_delay: frameDelay, loop_type: loopType })
+        sprites.push({
+          id: spriteIdCounter,
+          type: 'animation',
+          layer,
+          origin,
+          filepath,
+          x: parseFloat(parts[4]),
+          y: parseFloat(parts[5]),
+          frame_count: frameCount,
+          frame_delay: frameDelay,
+          loop_type: loopType,
+        })
         currentSpriteId = spriteIdCounter++
         const dotIdx = filepath.lastIndexOf('.')
         const base = dotIdx > 0 ? filepath.slice(0, dotIdx) : filepath
@@ -202,7 +273,7 @@ export function parse(text) {
 
         if (isMania) {
           const keyCount = difficulty.circleSize || 4
-          const col = Math.floor(x * keyCount / 512)
+          const col = Math.floor((x * keyCount) / 512)
           if (type & 128) {
             const extras = parts.slice(5).join(',')
             const endTime = parseInt(extras.split(':')[0])
@@ -291,19 +362,19 @@ export function serialize(parsed) {
     lines.push(`[${section}]`)
     if (section === 'TimingPoints') {
       for (const tp of timingPoints) {
-        const msPerBeat = tp.uninherited
-          ? tp.msPerBeat
-          : -100 / (tp.svMultiplier ?? 1)
-        lines.push([
-          Math.round(tp.offset),
-          msPerBeat,
-          tp.meter,
-          tp.sampleSet,
-          tp.sampleIndex,
-          tp.volume,
-          tp.uninherited ? 1 : 0,
-          tp.effects,
-        ].join(','))
+        const msPerBeat = tp.uninherited ? tp.msPerBeat : -100 / (tp.svMultiplier ?? 1)
+        lines.push(
+          [
+            Math.round(tp.offset),
+            msPerBeat,
+            tp.meter,
+            tp.sampleSet,
+            tp.sampleIndex,
+            tp.volume,
+            tp.uninherited ? 1 : 0,
+            tp.effects,
+          ].join(','),
+        )
       }
     } else {
       lines.push(content)

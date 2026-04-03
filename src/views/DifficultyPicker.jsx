@@ -43,7 +43,11 @@ export default function DifficultyPicker() {
   }
 
   return (
-    <Modal open={true} onClose={handleClose} className="bg-[#2b2b2b] border border-[#3b3b3b] rounded-[3px] p-0 shadow-lg shadow-black/40 backdrop:bg-black/50 w-[400px] overflow-hidden">
+    <Modal
+      open={true}
+      onClose={handleClose}
+      className="bg-[#2b2b2b] border border-[#3b3b3b] rounded-[3px] p-0 shadow-lg shadow-black/40 backdrop:bg-black/50 w-[400px] overflow-hidden"
+    >
       {/* Header with background image */}
       <div className="relative h-24 overflow-hidden border-b border-[#3b3b3b]">
         {bgUrl ? (
@@ -65,15 +69,12 @@ export default function DifficultyPicker() {
       <Scrollbar maxHeight={250}>
         <div className="py-1">
           {Object.entries(grouped).map(([mode, diffs]) => (
-            <PropertyPanel
-              key={mode}
-              title={`${MODE_NAMES[mode] || `Mode ${mode}`} (${diffs.length})`}
-              >
+            <PropertyPanel key={mode} title={`${MODE_NAMES[mode] || `Mode ${mode}`} (${diffs.length})`}>
               <div className="space-y-0.5">
                 {diffs.map((diff, i) => {
                   const m = diff.parsed.metadata
-                  const svCount = diff.parsed.timingPoints.filter(tp => !tp.uninherited).length
-                  const bpmCount = diff.parsed.timingPoints.filter(tp => tp.uninherited).length
+                  const svCount = diff.parsed.timingPoints.filter((tp) => !tp.uninherited).length
+                  const bpmCount = diff.parsed.timingPoints.filter((tp) => tp.uninherited).length
                   return (
                     <Button
                       key={i}
@@ -81,7 +82,10 @@ export default function DifficultyPicker() {
                       size="sm"
                       className={`w-full !justify-start !text-left !px-1.5 !py-1 ${selected === diff ? '!bg-[#2d8ceb]/20 !border-[#2d8ceb]/40 border' : ''}`}
                       onClick={() => setSelected(diff)}
-                      onDoubleClick={async () => { dispatch('CLEAR_PENDING_OSZ'); await loadDifficulty(diff, zip, dispatch, audio) }}
+                      onDoubleClick={async () => {
+                        dispatch('CLEAR_PENDING_OSZ')
+                        await loadDifficulty(diff, zip, dispatch, audio)
+                      }}
                     >
                       <div className="flex-1 min-w-0 ml-0.5">
                         <div className="text-[11px] text-[#cccccc] truncate">{m.version || diff.name}</div>
@@ -103,8 +107,12 @@ export default function DifficultyPicker() {
 
       {/* Footer */}
       <div className="px-3 py-2 border-t border-[#3b3b3b] flex justify-end gap-1.5">
-        <Button variant="secondary" size="sm" onClick={handleClose}>Cancel</Button>
-        <Button size="sm" disabled={!selected} onClick={handleLoad}>Load</Button>
+        <Button variant="secondary" size="sm" onClick={handleClose}>
+          Cancel
+        </Button>
+        <Button size="sm" disabled={!selected} onClick={handleLoad}>
+          Load
+        </Button>
       </div>
     </Modal>
   )

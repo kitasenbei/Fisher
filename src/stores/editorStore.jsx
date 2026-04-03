@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useRef, useCallback } from 'react'
+import { createContext, useContext, useReducer, useRef, useCallback, useMemo } from 'react'
 import AudioEngine from '../lib/audioEngine'
 
 const EditorContext = createContext(null)
@@ -16,6 +16,9 @@ const initialState = {
   snapEnabled: true,
   snapDivisor: 4,
   activeTool: 'select',
+  fisherSegments: [],
+  fisherVersion: 0,
+  selectedSegment: null,
   display: {
     beatGrid: true,
     svLine: true,
@@ -27,6 +30,7 @@ const initialState = {
     hoverLabels: true,
     measureLines: true,
     logScale: false,
+    fisherCurves: true,
   },
   undoStack: [],
   redoStack: [],
@@ -40,6 +44,9 @@ function reducer(state, action) {
         file: action.payload,
         timingPoints: action.payload.parsed.timingPoints,
         selection: new Set(),
+        fisherSegments: [],
+        fisherVersion: state.fisherVersion + 1,
+        selectedSegment: null,
         undoStack: [],
         redoStack: [],
         viewport: {
@@ -60,6 +67,10 @@ function reducer(state, action) {
       return { ...state, loading: null }
     case 'SET_STORYBOARD_URLS':
       return { ...state, storyboardImageUrls: action.payload }
+    case 'SET_FISHER_SEGMENTS':
+      return { ...state, fisherSegments: action.payload }
+    case 'SELECT_SEGMENT':
+      return { ...state, selectedSegment: action.payload, selection: new Set() }
     case 'SET_TIMING_POINTS': {
       const sorted = [...action.payload].sort((a, b) => a.offset - b.offset)
       return {
@@ -67,6 +78,8 @@ function reducer(state, action) {
         undoStack: [...state.undoStack, state.timingPoints],
         redoStack: [],
         timingPoints: sorted,
+        fisherSegments: [],
+        fisherVersion: state.fisherVersion + 1,
       }
     }
     case 'ADD_POINT': {
@@ -76,6 +89,8 @@ function reducer(state, action) {
         undoStack: [...state.undoStack, state.timingPoints],
         redoStack: [],
         timingPoints: newPoints,
+        fisherSegments: [],
+        fisherVersion: state.fisherVersion + 1,
       }
     }
     case 'REMOVE_POINTS': {
@@ -87,6 +102,8 @@ function reducer(state, action) {
         redoStack: [],
         timingPoints: newPoints,
         selection: new Set(),
+        fisherSegments: [],
+        fisherVersion: state.fisherVersion + 1,
       }
     }
     case 'UPDATE_POINT': {
@@ -99,6 +116,8 @@ function reducer(state, action) {
         undoStack: [...state.undoStack, state.timingPoints],
         redoStack: [],
         timingPoints: newPoints,
+        fisherSegments: [],
+        fisherVersion: state.fisherVersion + 1,
       }
     }
     case 'INSERT_PATTERN': {
@@ -108,6 +127,8 @@ function reducer(state, action) {
         undoStack: [...state.undoStack, state.timingPoints],
         redoStack: [],
         timingPoints: merged,
+        fisherSegments: [],
+        fisherVersion: state.fisherVersion + 1,
       }
     }
     case 'SELECT':
@@ -145,6 +166,8 @@ function reducer(state, action) {
         redoStack: [...state.redoStack, state.timingPoints],
         timingPoints: prev,
         selection: new Set(),
+        fisherSegments: [],
+        fisherVersion: state.fisherVersion + 1,
       }
     }
     case 'REDO': {
@@ -156,6 +179,8 @@ function reducer(state, action) {
         undoStack: [...state.undoStack, state.timingPoints],
         timingPoints: next,
         selection: new Set(),
+        fisherSegments: [],
+        fisherVersion: state.fisherVersion + 1,
       }
     }
     default:
@@ -167,13 +192,16 @@ export function EditorProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState)
   const audioRef = useRef(new AudioEngine())
 
-  const audio = audioRef.current
-
   const d = useCallback((type, payload) => dispatch({ type, payload }), [])
 
-  return <EditorContext.Provider value={{ state, dispatch: d, audio }}>{children}</EditorContext.Provider>
+  // audioRef is stable (created once) — safe to read during render
+  // eslint-disable-next-line react-hooks/refs
+  const ctx = useMemo(() => ({ state, dispatch: d, audio: audioRef.current }), [state, d])
+
+  return <EditorContext.Provider value={ctx}>{children}</EditorContext.Provider>
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useEditor() {
   return useContext(EditorContext)
 }

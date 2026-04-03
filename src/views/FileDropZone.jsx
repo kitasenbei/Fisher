@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import JSZip from 'jszip'
 import { useEditor } from '../stores/editorStore'
 import { parse, parseStoryboard } from '../lib/osuParser'
+import { analyzeSvPatterns } from '../lib/svAnalyzer'
 
 const flush = () => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))
 
@@ -78,6 +79,7 @@ async function extractOsz(file, onProgress) {
   return { osuFiles, zip, bgUrl }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export async function loadDifficulty(chosen, zip, dispatch, audio) {
   dispatch('SET_LOADING', { message: 'Loading audio...', progress: 0 })
   await flush()
@@ -97,9 +99,14 @@ export async function loadDifficulty(chosen, zip, dispatch, audio) {
     }
   }
 
-  dispatch('SET_LOADING', { message: 'Loading beatmap...', progress: 60 })
+  dispatch('SET_LOADING', { message: 'Loading beatmap...', progress: 55 })
   await flush()
   dispatch('LOAD_FILE', { raw: chosen.text, parsed: chosen.parsed, filename: chosen.name })
+
+  dispatch('SET_LOADING', { message: 'Analyzing SV patterns...', progress: 65 })
+  await flush()
+  const segments = analyzeSvPatterns(chosen.parsed.timingPoints)
+  dispatch('SET_FISHER_SEGMENTS', segments)
 
   // Extract storyboard images from zip
   const sb = chosen.parsed.storyboard

@@ -53,8 +53,10 @@ import {
 import { useEditor } from '../stores/editorStore'
 import { serialize } from '../lib/osuParser'
 import { svAtTime, bpmAtTime } from '../lib/svMath'
+import { analyzeSvPatterns } from '../lib/svAnalyzer'
 import SVGraph from './SVGraph'
 import PointInspector from './PointInspector'
+import SegmentInspector from './SegmentInspector'
 import TimingPointList from './TimingPointList'
 import PatternDialog from './PatternDialog'
 import DifficultyPicker from './DifficultyPicker'
@@ -64,7 +66,19 @@ import ManiaPreview from './ManiaPreview'
 
 export default function EditorLayout() {
   const { state, dispatch, audio } = useEditor()
-  const { timingPoints, playback, selection, snapEnabled, snapDivisor, activeTool, file, storyboardImageUrls } = state
+  const {
+    timingPoints,
+    playback,
+    selection,
+    snapEnabled,
+    snapDivisor,
+    activeTool,
+    file,
+    storyboardImageUrls,
+    fisherSegments,
+    fisherVersion,
+    selectedSegment,
+  } = state
   const storyboard = file?.parsed?.storyboard
   const isStdMode =
     file?.parsed?.general?.mode === 0 ||
@@ -94,6 +108,16 @@ export default function EditorLayout() {
   const bpmCount = timingPoints.filter((tp) => tp.uninherited).length
   const currentSV = svAtTime(timingPoints, playback.currentTimeMs)
   const currentBPM = bpmAtTime(timingPoints, playback.currentTimeMs)
+
+  // Debounced Fisher segment rebuild when timing points change
+  useEffect(() => {
+    if (timingPoints.length === 0 || fisherSegments.length > 0) return
+    const timer = setTimeout(() => {
+      const segments = analyzeSvPatterns(timingPoints)
+      dispatch('SET_FISHER_SEGMENTS', segments)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [fisherVersion]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep storyboard time ref in sync
   useEffect(() => {
@@ -172,7 +196,8 @@ export default function EditorLayout() {
         handleExport()
       }
     },
-    [selection, dispatch, toast],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selection, dispatch, toast, file, timingPoints, playback.currentTimeMs],
   )
 
   useEffect(() => {
@@ -436,6 +461,12 @@ export default function EditorLayout() {
                         checked={state.display.playhead}
                         onChange={() => dispatch('TOGGLE_DISPLAY', 'playhead')}
                       />
+                      <Checkbox
+                        id="ov-fisher"
+                        label="Fisher Curves"
+                        checked={state.display.fisherCurves}
+                        onChange={() => dispatch('TOGGLE_DISPLAY', 'fisherCurves')}
+                      />
                     </div>
                   </div>
                   <div className="px-2.5 py-1.5">
@@ -584,7 +615,7 @@ export default function EditorLayout() {
           {/* Tab content */}
           {rightTab === 'inspector' && (
             <div className="flex-1 overflow-y-auto">
-              <PointInspector />
+              {selectedSegment !== null ? <SegmentInspector /> : <PointInspector />}
             </div>
           )}
 

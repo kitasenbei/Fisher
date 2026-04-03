@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useMemo } from 'react'
 import { useEditor } from '../stores/editorStore'
 import { snapToBeat } from '../lib/svMath'
+import { evaluateSegment, segmentsForRange } from '../lib/svAnalyzer'
 
 const COLORS = {
   bg: '#353535',
@@ -29,19 +30,19 @@ export default function SVGraph() {
   const snapTargetRef = useRef(null) // { ms, sv } — the snapped position while dragging
   const seekWasPlayingRef = useRef(false) // track if audio was playing when seek started
 
-  // Store all state in a ref so draw never causes re-renders
+  // Store all state in a ref so the rAF draw loop reads latest values without re-renders
   const stateRef = useRef(state)
-  stateRef.current = state
+  stateRef.current = state // eslint-disable-line react-hooks/refs
 
   const hoveredRef = useRef(hoveredPoint)
-  hoveredRef.current = hoveredPoint
+  hoveredRef.current = hoveredPoint // eslint-disable-line react-hooks/refs
 
   const svPoints = useMemo(() => state.timingPoints.filter((tp) => !tp.uninherited), [state.timingPoints])
   const bpmPoints = useMemo(() => state.timingPoints.filter((tp) => tp.uninherited), [state.timingPoints])
   const svPointsRef = useRef(svPoints)
-  svPointsRef.current = svPoints
+  svPointsRef.current = svPoints // eslint-disable-line react-hooks/refs
   const bpmPointsRef = useRef(bpmPoints)
-  bpmPointsRef.current = bpmPoints
+  bpmPointsRef.current = bpmPoints // eslint-disable-line react-hooks/refs
 
   // Mark dirty on state changes
   useEffect(() => {
@@ -53,12 +54,29 @@ export default function SVGraph() {
     state.activeTool,
     state.playback.currentTimeMs,
     state.display,
+    state.fisherSegments,
     hoveredPoint,
   ])
 
   useEffect(() => {
     playbackRef.current = state.playback.currentTimeMs
   }, [state.playback.currentTimeMs])
+
+  function makeYTransforms(vp, d) {
+    const log = d.logScale
+    const logSafe = (v) => Math.log2(Math.max(v, 0.001))
+    const lMin = log ? logSafe(vp.svMin) : vp.svMin
+    const lMax = log ? logSafe(vp.svMax) : vp.svMax
+    const toY = (v, h) => {
+      const m = log ? logSafe(v) : v
+      return h - ((m - lMin) / (lMax - lMin)) * h
+    }
+    const fromY = (y, h) => {
+      const lin = lMax - (y / h) * (lMax - lMin)
+      return log ? Math.pow(2, lin) : lin
+    }
+    return { toY, fromY }
+  }
 
   // Single draw function — reads everything from refs, zero closures over state
   function draw() {
@@ -143,7 +161,24 @@ export default function SVGraph() {
     const tool = s.activeTool
     const tp = s.timingPoints
     const d = s.display
+    const fisherSegs = s.fisherSegments
     const sv = svPointsRef.current
+
+    // Pre-build point→index map to avoid O(n²) indexOf lookups
+    const tpIndexMap = new Map()
+    for (let i = 0; i < tp.length; i++) tpIndexMap.set(tp[i], i)
+
+    // Build set of point indices that belong to multi-point Fisher segments
+    const segmentedIndices = new Set()
+    if (d.fisherCurves && fisherSegs.length > 0) {
+      for (const seg of fisherSegs) {
+        if (seg.type !== 'point') {
+          for (let idx = seg.startIdx; idx <= seg.endIdx; idx++) {
+            if (tp[idx] && !tp[idx].uninherited) segmentedIndices.add(idx)
+          }
+        }
+      }
+    }
     const bpm = bpmPointsRef.current
     const hovered = hoveredRef.current
     const playMs = playbackRef.current
@@ -263,8 +298,6 @@ export default function SVGraph() {
 
     // SV step line + fill
     if (sv.length > 0 && (d.svLine || d.svFill)) {
-      // Only draw visible points
-      const visStart = vp.startMs
       const visEnd = vp.endMs
 
       ctx.beginPath()
@@ -337,6 +370,107 @@ export default function SVGraph() {
       }
     }
 
+    // Fisher segments — smooth curves for recognized patterns
+    if (d.fisherCurves && fisherSegs.length > 0) {
+      const visible = segmentsForRange(fisherSegs, vp.startMs, vp.endMs)
+      const selectedSeg = s.selectedSegment
+      const mx = mouseRef.current.x
+      let hoveredSeg = null
+
+      for (let si = 0; si < visible.length; si++) {
+        const seg = visible[si]
+        if (seg.type === 'point') continue
+
+        const sx = toX(seg.startMs)
+        const ex = toX(seg.endMs)
+        const segIdx = fisherSegs.indexOf(seg)
+        const isSelected = segIdx === selectedSeg
+        const isHovered = mx >= sx && mx <= ex && !isSelected
+
+        if (isHovered && !hoveredSeg) hoveredSeg = { seg, segIdx, sx, ex }
+
+        // Highlight background
+        if (isSelected || isHovered) {
+          const minY = Math.min(
+            toY(seg.params.startSV ?? seg.params.highSV ?? seg.params.centerSV ?? 1),
+            toY(seg.params.endSV ?? seg.params.lowSV ?? seg.params.centerSV ?? 1),
+          )
+          const maxY = Math.max(
+            toY(seg.params.startSV ?? seg.params.highSV ?? seg.params.centerSV ?? 1),
+            toY(seg.params.endSV ?? seg.params.lowSV ?? seg.params.centerSV ?? 1),
+          )
+          ctx.fillStyle = isSelected ? 'rgba(45, 140, 235, 0.12)' : 'rgba(45, 140, 235, 0.06)'
+          ctx.fillRect(sx, Math.min(minY, maxY) - 10, ex - sx, Math.abs(maxY - minY) + 20)
+        }
+
+        // Draw curve
+        ctx.beginPath()
+        ctx.strokeStyle = isSelected ? '#66bbff' : '#4da3f2'
+        ctx.lineWidth = isSelected ? 2.5 : 2
+
+        if (seg.type === 'stutter') {
+          // Alternating horizontal bars
+          const steps = seg.pointCount
+          for (let i = 0; i < steps; i++) {
+            const t = steps > 1 ? i / (steps - 1) : 0
+            const ms = seg.startMs + t * (seg.endMs - seg.startMs)
+            const sv = i % 2 === 0 ? seg.params.highSV : seg.params.lowSV
+            const px = toX(ms)
+            const py = toY(sv)
+            if (i === 0) ctx.moveTo(px, py)
+            else {
+              ctx.lineTo(px, py) // vertical jump
+            }
+            // Horizontal line to next point
+            if (i < steps - 1) {
+              const nextT = (i + 1) / (steps - 1)
+              const nextMs = seg.startMs + nextT * (seg.endMs - seg.startMs)
+              ctx.lineTo(toX(nextMs), py)
+            }
+          }
+        } else {
+          // Smooth curve: evaluate at ~50 points
+          const numSamples = Math.max(20, Math.min(80, Math.ceil((ex - sx) / 4)))
+          for (let i = 0; i <= numSamples; i++) {
+            const t = i / numSamples
+            const sv = evaluateSegment(seg, t)
+            const px = sx + (ex - sx) * t
+            const py = toY(sv)
+            if (i === 0) ctx.moveTo(px, py)
+            else ctx.lineTo(px, py)
+          }
+        }
+        ctx.stroke()
+
+        // Endpoint markers
+        const startY = toY(evaluateSegment(seg, 0))
+        const endY = toY(evaluateSegment(seg, 1))
+        for (const [epx, epy] of [
+          [sx, startY],
+          [ex, endY],
+        ]) {
+          ctx.beginPath()
+          ctx.arc(epx, epy, 3, 0, Math.PI * 2)
+          ctx.fillStyle = isSelected ? '#66bbff' : '#4da3f2'
+          ctx.fill()
+        }
+      }
+
+      // Hover chip for segments
+      if (hoveredSeg) {
+        const { seg, sx, ex } = hoveredSeg
+        const TYPE_LABELS = {
+          linear: 'Linear Ramp',
+          exponential: 'Exponential',
+          sine: 'Sine Wave',
+          stutter: 'Stutter',
+          polynomial: 'Polynomial',
+        }
+        const label = `${TYPE_LABELS[seg.type] || seg.type} · ${seg.pointCount} pts · ${(seg.error * 100).toFixed(1)}% fit`
+        chip(label, (sx + ex) / 2, 20, '#4da3f2', 'rgba(20,40,60,0.9)')
+      }
+    }
+
     // SV points (diamonds) — only visible ones
     if (!d.svPoints) {
       /* skip */
@@ -347,7 +481,11 @@ export default function SVGraph() {
         if (x < -10) continue
         if (x > w + 10) break
         const y = toY(point.svMultiplier)
-        const globalIdx = tp.indexOf(point)
+        const globalIdx = tpIndexMap.get(point) ?? -1
+
+        // Skip diamonds for points inside Fisher segments (they render as curves)
+        if (d.fisherCurves && segmentedIndices.has(globalIdx)) continue
+
         const isSelected = sel.has(globalIdx)
         const isHovered = hovered === globalIdx
         const size = isHovered ? 5 : 4
@@ -445,22 +583,6 @@ export default function SVGraph() {
     return { x: e.clientX - rect.left, y: e.clientY - rect.top, w: rect.width, h: rect.height }
   }
 
-  function makeYTransforms(vp, d) {
-    const log = d.logScale
-    const logSafe = (v) => Math.log2(Math.max(v, 0.001))
-    const lMin = log ? logSafe(vp.svMin) : vp.svMin
-    const lMax = log ? logSafe(vp.svMax) : vp.svMax
-    const toY = (v, h) => {
-      const m = log ? logSafe(v) : v
-      return h - ((m - lMin) / (lMax - lMin)) * h
-    }
-    const fromY = (y, h) => {
-      const lin = lMax - (y / h) * (lMax - lMin)
-      return log ? Math.pow(2, lin) : lin
-    }
-    return { toY, fromY }
-  }
-
   function getPointAtPos(x, y, w, h) {
     const vp = stateRef.current.viewport
     const d = stateRef.current.display
@@ -468,10 +590,26 @@ export default function SVGraph() {
     const tp = stateRef.current.timingPoints
     const toXl = (ms) => ((ms - vp.startMs) / (vp.endMs - vp.startMs)) * w
     const { toY: toYl } = makeYTransforms(vp, d)
+    const idxMap = new Map()
+    for (let i = 0; i < tp.length; i++) idxMap.set(tp[i], i)
     for (let i = 0; i < sv.length; i++) {
       const px = toXl(sv[i].offset)
       const py = toYl(sv[i].svMultiplier, h)
-      if (Math.abs(x - px) < 8 && Math.abs(y - py) < 8) return tp.indexOf(sv[i])
+      if (Math.abs(x - px) < 8 && Math.abs(y - py) < 8) return idxMap.get(sv[i]) ?? -1
+    }
+    return -1
+  }
+
+  function getSegmentAtPos(x, w) {
+    const vp = stateRef.current.viewport
+    const segs = stateRef.current.fisherSegments
+    if (!segs.length) return -1
+    const toXl = (ms) => ((ms - vp.startMs) / (vp.endMs - vp.startMs)) * w
+    for (let i = 0; i < segs.length; i++) {
+      if (segs[i].type === 'point') continue
+      const sx = toXl(segs[i].startMs)
+      const ex = toXl(segs[i].endMs)
+      if (x >= sx && x <= ex) return i
     }
     return -1
   }
@@ -513,13 +651,22 @@ export default function SVGraph() {
     switch (tool) {
       case 'select': {
         if (idx >= 0) {
+          dispatch('SELECT_SEGMENT', null)
           if (e.ctrlKey || e.metaKey) dispatch('TOGGLE_SELECT', idx)
           else dispatch('SELECT', [idx])
           const tp = s.timingPoints[idx]
           draggingRef.current = { idx, startX: x, startY: y, origOffset: tp.offset, origSV: tp.svMultiplier }
         } else {
-          dispatch('DESELECT_ALL')
-          if (e.detail === 2) addPointAt(x, y, w, h)
+          // Check for Fisher segment click
+          const segIdx = s.display.fisherCurves ? getSegmentAtPos(x, w) : -1
+          if (segIdx >= 0) {
+            dispatch('DESELECT_ALL')
+            dispatch('SELECT_SEGMENT', segIdx)
+          } else {
+            dispatch('DESELECT_ALL')
+            dispatch('SELECT_SEGMENT', null)
+            if (e.detail === 2) addPointAt(x, y, w, h)
+          }
         }
         break
       }

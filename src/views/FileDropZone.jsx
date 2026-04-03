@@ -3,11 +3,18 @@ import JSZip from 'jszip'
 import { useEditor } from '../stores/editorStore'
 import { parse, parseStoryboard } from '../lib/osuParser'
 
-async function extractOsz(file) {
+const flush = () => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)))
+
+async function extractOsz(file, onProgress) {
+  onProgress?.({ message: 'Reading archive...', progress: 0 })
+  await flush()
   const zip = await JSZip.loadAsync(file)
   const osuFiles = []
   let bgUrl = null
   let osbStoryboard = null
+
+  onProgress?.({ message: 'Parsing storyboard...', progress: 10 })
+  await flush()
 
   // Parse only root-level .osb file (sb/ folder contains editor source files, not storyboard data)
   for (const [path, entry] of Object.entries(zip.files)) {
@@ -18,37 +25,41 @@ async function extractOsz(file) {
     break
   }
 
-  for (const [path, entry] of Object.entries(zip.files)) {
-    if (entry.dir) continue
-    if (path.endsWith('.osu')) {
-      const text = await entry.async('text')
-      const parsed = parse(text)
-      // Merge .osb storyboard with .osu storyboard
-      if (osbStoryboard) {
-        const ws = !!parsed.general.widescreenStoryboard
-        if (!parsed.storyboard) {
-          parsed.storyboard = { ...osbStoryboard, widescreen: ws }
-        } else {
-          // Combine: .osb sprites get IDs shifted past .osu sprites
-          const osuSb = parsed.storyboard
-          const idOffset = osuSb.sprites.length ? Math.max(...osuSb.sprites.map(s => s.id)) + 1 : 0
-          const shiftedSprites = osbStoryboard.sprites.map(s => ({ ...s, id: s.id + idOffset }))
-          const shiftedCmds = osbStoryboard.commands.map(c => ({ ...c, sprite_id: c.sprite_id + idOffset }))
-          const mergedImages = [...osuSb.images]
-          for (const img of osbStoryboard.images) {
-            if (!mergedImages.includes(img)) mergedImages.push(img)
-          }
-          parsed.storyboard = {
-            sprites: [...osuSb.sprites, ...shiftedSprites],
-            commands: [...osuSb.commands, ...shiftedCmds],
-            images: mergedImages,
-            widescreen: ws,
-          }
+  const osuEntries = Object.entries(zip.files).filter(([p, e]) => !e.dir && p.endsWith('.osu'))
+  for (let i = 0; i < osuEntries.length; i++) {
+    const [path, entry] = osuEntries[i]
+    const pct = 20 + Math.round((i / osuEntries.length) * 50)
+    onProgress?.({ message: `Parsing ${path.split('/').pop()}...`, progress: pct })
+    await flush()
+    const text = await entry.async('text')
+    const parsed = parse(text)
+    // Merge .osb storyboard with .osu storyboard
+    if (osbStoryboard) {
+      const ws = !!parsed.general.widescreenStoryboard
+      if (!parsed.storyboard) {
+        parsed.storyboard = { ...osbStoryboard, widescreen: ws }
+      } else {
+        // Combine: .osb sprites get IDs shifted past .osu sprites
+        const osuSb = parsed.storyboard
+        const idOffset = osuSb.sprites.length ? Math.max(...osuSb.sprites.map(s => s.id)) + 1 : 0
+        const shiftedSprites = osbStoryboard.sprites.map(s => ({ ...s, id: s.id + idOffset }))
+        const shiftedCmds = osbStoryboard.commands.map(c => ({ ...c, sprite_id: c.sprite_id + idOffset }))
+        const mergedImages = [...osuSb.images]
+        for (const img of osbStoryboard.images) {
+          if (!mergedImages.includes(img)) mergedImages.push(img)
+        }
+        parsed.storyboard = {
+          sprites: [...osuSb.sprites, ...shiftedSprites],
+          commands: [...osuSb.commands, ...shiftedCmds],
+          images: mergedImages,
+          widescreen: ws,
         }
       }
-      osuFiles.push({ name: path, text, parsed })
     }
+    osuFiles.push({ name: path, text, parsed })
   }
+
+  onProgress?.({ message: 'Loading background...', progress: 80 })
 
   // Extract background image from the first .osu that has one
   for (const f of osuFiles) {
@@ -63,10 +74,14 @@ async function extractOsz(file) {
     }
   }
 
+  onProgress?.({ message: 'Done', progress: 100 })
   return { osuFiles, zip, bgUrl }
 }
 
 export async function loadDifficulty(chosen, zip, dispatch, audio) {
+  dispatch('SET_LOADING', { message: 'Loading audio...', progress: 0 })
+  await flush()
+
   // Load audio referenced by the chosen difficulty
   if (chosen.parsed.general.audioFilename) {
     const audioName = chosen.parsed.general.audioFilename
@@ -75,19 +90,28 @@ export async function loadDifficulty(chosen, zip, dispatch, audio) {
     if (audioEntry) {
       const blob = await audioEntry.async('blob')
       const audioFile = new File([blob], audioName, { type: 'audio/mpeg' })
+      dispatch('SET_LOADING', { message: 'Decoding audio...', progress: 30 })
+      await flush()
       await audio.load(audioFile)
       dispatch('SET_AUDIO', audioFile)
     }
   }
 
+  dispatch('SET_LOADING', { message: 'Loading beatmap...', progress: 60 })
+  await flush()
   dispatch('LOAD_FILE', { raw: chosen.text, parsed: chosen.parsed, filename: chosen.name })
-  dispatch('CLEAR_PENDING_OSZ')
 
   // Extract storyboard images from zip
   const sb = chosen.parsed.storyboard
   if (sb?.images?.length && zip) {
     const urls = {}
-    for (const imgPath of sb.images) {
+    const images = sb.images
+    for (let i = 0; i < images.length; i++) {
+      const imgPath = images[i]
+      const pct = 70 + Math.round((i / images.length) * 25)
+      dispatch('SET_LOADING', { message: `Loading sprite ${i + 1}/${images.length}...`, progress: pct })
+      // Yield every 5 sprites so the bar visually updates
+      if (i % 5 === 0) await flush()
       const normalized = imgPath.replace(/\\/g, '/')
       const entry = zip.files[imgPath] || zip.files[normalized] ||
         zip.files[Object.keys(zip.files).find(k => k.replace(/\\/g, '/').toLowerCase() === normalized.toLowerCase())]
@@ -100,20 +124,24 @@ export async function loadDifficulty(chosen, zip, dispatch, audio) {
   } else {
     dispatch('SET_STORYBOARD_URLS', null)
   }
+
+  dispatch('SET_LOADING', { message: 'Done', progress: 100 })
+  await new Promise(r => setTimeout(r, 300))
+  dispatch('CLEAR_LOADING')
 }
 
 export default function FileDropZone() {
   const { dispatch, audio } = useEditor()
 
   const handleFiles = useCallback(async (files) => {
+    const onProgress = (p) => dispatch('SET_LOADING', p)
     for (const file of files) {
       if (file.name.endsWith('.osz')) {
-        const extracted = await extractOsz(file)
+        const extracted = await extractOsz(file, onProgress)
         if (extracted.osuFiles.length === 1) {
-          // Only one difficulty — load it directly
           await loadDifficulty(extracted.osuFiles[0], extracted.zip, dispatch, audio)
         } else if (extracted.osuFiles.length > 1) {
-          // Multiple — show picker
+          dispatch('CLEAR_LOADING')
           dispatch('SET_PENDING_OSZ', extracted)
         }
       } else if (file.name.endsWith('.osu')) {
@@ -170,12 +198,14 @@ export function FileOpenButton() {
     input.multiple = true
     input.accept = '.osz,.osu,.mp3,.ogg,.wav'
     input.onchange = async (e) => {
+      const onProgress = (p) => dispatch('SET_LOADING', p)
       for (const file of e.target.files) {
         if (file.name.endsWith('.osz')) {
-          const extracted = await extractOsz(file)
+          const extracted = await extractOsz(file, onProgress)
           if (extracted.osuFiles.length === 1) {
             await loadDifficulty(extracted.osuFiles[0], extracted.zip, dispatch, audio)
           } else if (extracted.osuFiles.length > 1) {
+            dispatch('CLEAR_LOADING')
             dispatch('SET_PENDING_OSZ', extracted)
           }
         } else if (file.name.endsWith('.osu')) {

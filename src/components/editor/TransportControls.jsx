@@ -1,4 +1,4 @@
-import Tooltip from './Tooltip'
+import Tooltip from '../ui/Tooltip'
 
 export default function TransportControls({ icons = {}, playing, frame, totalFrames, onPlay, onPause, onFrameChange, className = '' }) {
   const buttons = [

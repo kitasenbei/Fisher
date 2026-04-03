@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Tooltip from './Tooltip'
+import Tooltip from '../ui/Tooltip'
 
 export default function ToolStrip({ tools = [], value: controlledValue, onChange, orientation = 'vertical', className = '' }) {
   const isControlled = controlledValue !== undefined && onChange !== undefined

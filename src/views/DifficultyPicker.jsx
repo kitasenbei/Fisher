@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useEditor } from '../stores/editorStore'
 import { loadDifficulty } from './FileDropZone'
 import { Modal, Button, Scrollbar, Badge, PropertyPanel } from '../components'
@@ -7,6 +8,7 @@ const MODE_NAMES = { 0: 'osu!', 1: 'Taiko', 2: 'Catch', 3: 'Mania' }
 export default function DifficultyPicker() {
   const { state, dispatch, audio } = useEditor()
   const { pendingOsz } = state
+  const [selected, setSelected] = useState(null)
 
   if (!pendingOsz) return null
 
@@ -26,13 +28,18 @@ export default function DifficultyPicker() {
 
   const meta = osuFiles[0]?.parsed?.metadata
 
-  async function handleSelect(diff) {
+  async function handleLoad() {
+    if (!selected) return
+    const diff = selected
+    setSelected(null)
+    dispatch('CLEAR_PENDING_OSZ')
     await loadDifficulty(diff, zip, dispatch, audio)
   }
 
   function handleClose() {
     if (bgUrl) URL.revokeObjectURL(bgUrl)
     dispatch('CLEAR_PENDING_OSZ')
+    setSelected(null)
   }
 
   return (
@@ -72,8 +79,9 @@ export default function DifficultyPicker() {
                       key={i}
                       variant="ghost"
                       size="sm"
-                      className="w-full !justify-start !text-left !px-1.5 !py-1"
-                      onClick={() => handleSelect(diff)}
+                      className={`w-full !justify-start !text-left !px-1.5 !py-1 ${selected === diff ? '!bg-[#2d8ceb]/20 !border-[#2d8ceb]/40 border' : ''}`}
+                      onClick={() => setSelected(diff)}
+                      onDoubleClick={async () => { dispatch('CLEAR_PENDING_OSZ'); await loadDifficulty(diff, zip, dispatch, audio) }}
                     >
                       <div className="flex-1 min-w-0 ml-0.5">
                         <div className="text-[11px] text-[#cccccc] truncate">{m.version || diff.name}</div>
@@ -94,8 +102,9 @@ export default function DifficultyPicker() {
       </Scrollbar>
 
       {/* Footer */}
-      <div className="px-3 py-2 border-t border-[#3b3b3b] flex justify-end">
+      <div className="px-3 py-2 border-t border-[#3b3b3b] flex justify-end gap-1.5">
         <Button variant="secondary" size="sm" onClick={handleClose}>Cancel</Button>
+        <Button size="sm" disabled={!selected} onClick={handleLoad}>Load</Button>
       </div>
     </Modal>
   )

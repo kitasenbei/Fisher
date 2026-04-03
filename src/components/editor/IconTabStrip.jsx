@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import Tooltip from './Tooltip'
+import Tooltip from '../ui/Tooltip'
 
 export default function IconTabStrip({ tabs = [], value: controlledValue, onChange, position = 'left', className = '' }) {
   const isControlled = controlledValue !== undefined && onChange !== undefined

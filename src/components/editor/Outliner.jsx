@@ -1,4 +1,4 @@
-import Tree from './Tree'
+import Tree from '../ui/Tree'
 
 export default function Outliner({ nodes = [], selected, onSelect, searchIcon, filterIcon, className = '' }) {
   return (

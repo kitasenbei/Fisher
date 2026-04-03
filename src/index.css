@@ -49,3 +49,14 @@
   50% { transform: translateX(200%); }
   100% { transform: translateX(-100%); }
 }
+
+/* Loading bar animations */
+@keyframes loading-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes loading-stripe {
+  0% { background-position: 0 0; }
+  100% { background-position: 16px 0; }
+}

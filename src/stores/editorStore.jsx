@@ -7,6 +7,7 @@ const initialState = {
   file: null,         // { raw, parsed, filename }
   audioFile: null,
   pendingOsz: null,   // { osuFiles, zip } — waiting for difficulty selection
+  loading: null,       // { message, progress (0-100) } — file loading state
   storyboardImageUrls: null, // { path: blobUrl } map for storyboard images
   timingPoints: [],
   selection: new Set(),
@@ -53,6 +54,10 @@ function reducer(state, action) {
       return { ...state, pendingOsz: action.payload }
     case 'CLEAR_PENDING_OSZ':
       return { ...state, pendingOsz: null }
+    case 'SET_LOADING':
+      return { ...state, loading: action.payload }
+    case 'CLEAR_LOADING':
+      return { ...state, loading: null }
     case 'SET_STORYBOARD_URLS':
       return { ...state, storyboardImageUrls: action.payload }
     case 'SET_TIMING_POINTS': {

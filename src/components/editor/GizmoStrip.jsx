@@ -1,4 +1,4 @@
-import Tooltip from './Tooltip'
+import Tooltip from '../ui/Tooltip'
 
 export default function GizmoStrip({ items = [], orientation = 'vertical', className = '' }) {
   const isVertical = orientation === 'vertical'

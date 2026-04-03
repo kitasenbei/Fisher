@@ -1,4 +1,4 @@
-import Tooltip from './Tooltip'
+import Tooltip from '../ui/Tooltip'
 
 export default function Toolbar({ items = [], orientation = 'horizontal', className = '' }) {
   const isVertical = orientation === 'vertical'

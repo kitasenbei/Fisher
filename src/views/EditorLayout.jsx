@@ -10,9 +10,8 @@ import {
   MenuBar, StatusBar, Button, Tooltip, SegmentedControl, Slider,
   TransportControls, useToast, ToolStrip, PropertyPanel, PropertyRow,
   Checkbox, GizmoStrip, IconToggle, StoryboardRenderer,
+  FloatingPanel, OsuPlayfield, precomputeObjects, getAR, getCS,
 } from '../components'
-import FloatingPanel from '../components/FloatingPanel'
-import OsuPlayfield, { precomputeObjects, getAR, getCS } from '../components/OsuPlayfield'
 import { useEditor } from '../stores/editorStore'
 import { serialize } from '../lib/osuParser'
 import { svAtTime, bpmAtTime } from '../lib/svMath'
@@ -21,6 +20,7 @@ import PointInspector from './PointInspector'
 import TimingPointList from './TimingPointList'
 import PatternDialog from './PatternDialog'
 import DifficultyPicker from './DifficultyPicker'
+import LoadingOverlay from './LoadingOverlay'
 import FileDropZone, { FileOpenButton } from './FileDropZone'
 import ManiaPreview from './ManiaPreview'
 
@@ -460,6 +460,7 @@ export default function EditorLayout() {
 
       <PatternDialog open={patternOpen} onClose={() => setPatternOpen(false)} />
       <DifficultyPicker />
+      <LoadingOverlay />
     </div>
   )
 }

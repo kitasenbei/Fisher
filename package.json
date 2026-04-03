@@ -20,7 +20,11 @@
     "tailwindcss": "^4.2.2"
   },
   "lint-staged": {
-    "*.{js,jsx,css,json,md}": "prettier --write"
+    "*.{js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{css,json,md}": "prettier --write"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",
